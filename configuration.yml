@@ -1,0 +1,36 @@
+# ScreenStreamer by YangHaitao
+
+# LOG_LEVEL
+# a value of (DEBUG, INFO, WARN, ERROR)
+# default NOSET
+log_level: INFO
+log_path: logs
+
+server_host: 0.0.0.0
+server_port: 8080
+
+threads: 5
+
+fps: 30
+quality: 96
+left: 0
+top: 0
+width: 0
+height: 0
+resize_width: 0
+resize_height: 0
+
+tasks_queue_size: 1
+buffer_queue_size: 0
+images_queue_size: 0
+convert_buffer_size: 1
+convert_images_size: 1
+
+shot: 1
+# every frame sleep  +- (alpha / 100) * (1 / fps) senonds
+alpha: 15
+convert: 3
+# single, single-single, single-multi, multi-multi, sync-single-multi, sync-multi-multi
+mode: sync-single-multi
+
+# fps 22 quality 95 - 100 1600 * 900 threads 5 convert 4
