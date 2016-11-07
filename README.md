@@ -7,6 +7,7 @@ set, and you have a smart phone, I think you will like this application.
 Install & Run ScreenStreamer
 ----------------------------
 1. Build it
+   
    ```bash
    # create a workspace directory
    mkdir ./ScreenStreamer
@@ -23,6 +24,7 @@ Install & Run ScreenStreamer
 
    ```
 2. Config configuration.yml file
+   
    ```yaml
    # log level
    # a value of (DEBUG, INFO, WARN, ERROR)
@@ -80,6 +82,7 @@ Install & Run ScreenStreamer
    # so, I set it 22-24fps, and the window's size is (1280 * 720), I use 1000M wifi.
    ```
 3. Run it
+   
    ```bash
    # enter the project root directory
    cd ./src/ScreenStreamer
@@ -88,12 +91,14 @@ Install & Run ScreenStreamer
    # use a web browser or other video player, open http://host:port/mjpeg
    ```
 4. Stop it
+   
    ```bash
    # Use Ctrl+C at the terminal or 
    # Use a web browser or curl open http://host:port/stop
    curl host:port/stop
    ```
 5. Performance
+   
    ```
    Server side
    CPU: i5-6300HQ(40%)
