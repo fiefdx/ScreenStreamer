@@ -17,7 +17,7 @@ Install & Run ScreenStreamer
    # enter the project root directory
    cd ./src/ScreenStreamer
    # add the workspace directory and lib directory to GOPATH
-   export GOPATH=/path-to-workspace
+   export GOPATH=/path-to-workspace/ScreenStreamer:/path-to-workspace/ScreenStreamer/src/ScreenStreamer/lib
    # build the project, it will produce a binary executable file named "stream" or "stream.exe"
    go build stream.go
 
@@ -92,7 +92,7 @@ Install & Run ScreenStreamer
    # Use Ctrl+C at the terminal or 
    # Use a web browser or curl open http://host:port/stop
    curl host:port/stop
-
+   ```
 5. Performance
    ```
    Server side
