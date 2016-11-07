@@ -14,7 +14,7 @@ Install & Run ScreenStreamer
    # enter the directory
    cd ./ScreenStreamer
    # clone the source code
-   git clone git@github.com:fiefdx/ScreenStreamer.git src
+   git clone git@github.com:fiefdx/ScreenStreamer.git src/ScreenStreamer
    # enter the project root directory
    cd ./src/ScreenStreamer
    # add the workspace directory and lib directory to GOPATH
