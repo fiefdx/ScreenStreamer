@@ -1,3 +1,6 @@
 *.log
 *.log.*
 stream
+test/screenshot
+test/*.jpeg
+test/*.jpg
