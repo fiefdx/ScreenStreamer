@@ -9,6 +9,8 @@ Install & Run ScreenStreamer
 1. Build it
    
    ```bash
+   # need install libjpeg/libjpeg-turbo, on windows, need install mingw, libjpeg/libjpeg-turbo 
+   sudo apt-get install libjpeg-turbo8-dev
    # create a workspace directory
    mkdir ./ScreenStreamer
    # enter the directory
@@ -36,12 +38,12 @@ Install & Run ScreenStreamer
    server_port: 8080
 
    # how many threads you want to run goroutines
-   threads: 5
+   threads: 4
 
    # target fps
    fps: 23
    # target jpeg quality
-   quality: 96
+   quality: 97
    # screenshot image 
    # left offset, 0 is default
    # top offset, 0 is default
@@ -76,10 +78,10 @@ Install & Run ScreenStreamer
    # multi-multi, multi shoter and multi converters
    # sync-single-multi, a shoter and multi converters, shoter and converters works synchronizely
    # sync-multi-multi, multi shoters and multi converters, shoters and converters works synchronizely
-   mode: sync-single-multi
+   mode: single
 
    # I use it to stream windows window to my smartphone, play the stream with mxplayer, the mxplayer play mjpeg as 25fps,
-   # so, I set it 22-24fps, and the window's size is (1280 * 720), I use 1000M wifi.
+   # so, I set it 20-24fps, and the window's size is (1280 * 720), I use 1000M wifi.
    ```
 3. Run it
    
@@ -101,7 +103,7 @@ Install & Run ScreenStreamer
    
    ```
    Server side
-   CPU: i5-6300HQ(40%)
+   CPU: i5-6300HQ(20%)
    RAM: 12GB(very less)
    SYSTEM: Windows 10 Home
 
@@ -109,7 +111,7 @@ Install & Run ScreenStreamer
    PHONE: LG G3
    PLAYER: mxplayer
    FPS: 25
-   DELAY: 100-500ms(it's depend on your network and devices, my phone can's fully use 1000M wifi)
+   DELAY: <100ms(it's depend on your network and devices, my phone can's fully use 1000M wifi)
 
    Wifi: 1000M
    ```
