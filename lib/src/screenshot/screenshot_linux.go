@@ -70,7 +70,7 @@ func CaptureRect(rect image.Rectangle) (*image.RGBA, error) {
 	return img, nil
 }
 
-func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE) (*image.RGBA, error) {
+func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) (*image.RGBA, error) {
 	c, err := xgb.NewConn()
 	if err != nil {
 		fmt.Errorf("error occurred, when xgb.NewConn err:%v.\n", err)
@@ -113,14 +113,19 @@ func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE) (*image.RGBA, error) {
 		data[i], data[i+2], data[i+3] = data[i+2], data[i], 255
 	}
 
-	img := &image.RGBA{data, 4 * width, image.Rect(pos.X, pos.Y, width, height)}
+	var img *image.RGBA
+	if toSBS {
+		img = &image.RGBA{append(data, data...), 4 * width, image.Rect(pos.X, pos.Y, width*2, height)}
+	} else {
+		img = &image.RGBA{data, 4 * width, image.Rect(pos.X, pos.Y, width, height)}
+	}
 	return img, nil
 }
 
-func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE) *image.RGBA {
-	img, err := CaptureWindow(pos, size, resize)
+func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) *image.RGBA {
+	img, err := CaptureWindow(pos, size, resize, toSBS)
 	for err != nil {
-		img, err = CaptureWindow(pos, size, resize)
+		img, err = CaptureWindow(pos, size, resize, toSBS)
 	}
 	return img
 }

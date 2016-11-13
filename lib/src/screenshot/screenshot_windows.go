@@ -185,7 +185,7 @@ func CaptureWindowImage(capture *CAPTURE) *image.RGBA {
 	return img
 }
 
-func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE) (*image.RGBA, error) {
+func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) (*image.RGBA, error) {
 	hWND := w32.GetForegroundWindow()
 	hDC := w32.GetDC(hWND)
 	if hDC == 0 || hWND == 0 {
@@ -250,15 +250,20 @@ func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE) (*image.RGBA, error) {
 		imageBytes[i], imageBytes[i+2], imageBytes[i+1], imageBytes[i+3] = slice[i+2], slice[i], slice[i+1], slice[i+3]
 	}
 
-	img := &image.RGBA{imageBytes, 4 * width, image.Rect(0, 0, width, height)}
+	var img *image.RGBA
+	if toSBS {
+		img = &image.RGBA{append(imageBytes, imageBytes...), 4 * width, image.Rect(0, 0, width*2, height)}
+	} else {
+		img = &image.RGBA{imageBytes, 4 * width, image.Rect(0, 0, width, height)}
+	}
 
 	return img, nil
 }
 
-func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE) *image.RGBA {
-	img, err := CaptureWindow(pos, size, resize)
+func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) *image.RGBA {
+	img, err := CaptureWindow(pos, size, resize, toSBS)
 	for err != nil {
-		img, err = CaptureWindow(pos, size, resize)
+		img, err = CaptureWindow(pos, size, resize, toSBS)
 	}
 	return img
 }

@@ -64,6 +64,9 @@ Install & Run ScreenStreamer
    convert_buffer_size: 1
    convert_images_size: 1
 
+   # to_sbs, convert 2d image to side-by-side images
+   to_sbs: false
+
    # how many screen shoters to work, less than 10
    shot: 1
    # alpha is an option to make the fps stable
@@ -79,9 +82,6 @@ Install & Run ScreenStreamer
    # sync-single-multi, a shoter and multi converters, shoter and converters works synchronizely
    # sync-multi-multi, multi shoters and multi converters, shoters and converters works synchronizely
    mode: single
-
-   # I use it to stream windows window to my smartphone, play the stream with mxplayer, the mxplayer play mjpeg as 25fps,
-   # so, I set it 20-24fps, and the window's size is (1280 * 720), I use 1000M wifi.
    ```
 3. Run it
    
@@ -110,7 +110,7 @@ Install & Run ScreenStreamer
    Client side
    PHONE: LG G3
    PLAYER: mxplayer
-   FPS: 25
+   FPS: 25(the mxplayer play mjpeg as 25fps,so , I set it 20-24fps, more fps just get frame delay, and the window's size is (1280 * 720))
    DELAY: <100ms(it's depend on your network and devices, my phone can's fully use 1000M wifi)
 
    Wifi: 1000M
