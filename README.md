@@ -4,6 +4,12 @@ A golang project, aim for stream one pc's active window (windows or linux) to an
 it's not a broadcast server, it's for point to point service, if you want to use tridef-3d and you don't have a professional VR head
 set, and you have a smart phone, I think you will like this application.
 
+ScreenShots
+-----------
+1. Working like this
+   
+   ![Alt text](/doc/stream_video_to_phone.png?raw=true "stream_video_to_phone")
+
 Install & Run ScreenStreamer
 ----------------------------
 1. Build it
