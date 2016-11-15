@@ -70,7 +70,7 @@ func CaptureRect(rect image.Rectangle) (*image.RGBA, error) {
 	return img, nil
 }
 
-func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) (*image.RGBA, error) {
+func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool) (*image.RGBA, error) {
 	c, err := xgb.NewConn()
 	if err != nil {
 		fmt.Errorf("error occurred, when xgb.NewConn err:%v.\n", err)
@@ -122,10 +122,10 @@ func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) (*image.RGB
 	return img, nil
 }
 
-func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) *image.RGBA {
-	img, err := CaptureWindow(pos, size, resize, toSBS)
+func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool) *image.RGBA {
+	img, err := CaptureWindow(pos, size, resize, toSBS, cursor)
 	for err != nil {
-		img, err = CaptureWindow(pos, size, resize, toSBS)
+		img, err = CaptureWindow(pos, size, resize, toSBS, cursor)
 	}
 	return img
 }

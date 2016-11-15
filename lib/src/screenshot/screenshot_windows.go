@@ -185,7 +185,7 @@ func CaptureWindowImage(capture *CAPTURE) *image.RGBA {
 	return img
 }
 
-func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) (*image.RGBA, error) {
+func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool) (*image.RGBA, error) {
 	hWND := w32.GetForegroundWindow()
 	hDC := w32.GetDC(hWND)
 	if hDC == 0 || hWND == 0 {
@@ -237,6 +237,18 @@ func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) (*image.RGB
 
 	//Note:BitBlt contains bad error handling, we will just assume it works and if it doesn't it will panic :x
 	w32.BitBlt(m_hDC, 0, 0, width, height, hDC, pos.X, pos.Y, w32.SRCCOPY)
+	if cursor {
+		CursorInfo := new(w32.CURSORINFO)
+		_ = w32.GetCursorInfo(CursorInfo)
+		cx, cy, ok := w32.ScreenToClient(hWND, int(CursorInfo.PtScreenPos.X), int(CursorInfo.PtScreenPos.Y))
+		if ok {
+			if int(CursorInfo.HCursor) == 65541 {
+				cx -= 8
+				cy -= 9
+			}
+			w32.DrawIcon(m_hDC, cx, cy, w32.HICON(CursorInfo.HCursor))
+		}
+	}
 
 	var slice []byte
 	hdrp := (*reflect.SliceHeader)(unsafe.Pointer(&slice))
@@ -260,10 +272,10 @@ func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) (*image.RGB
 	return img, nil
 }
 
-func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool) *image.RGBA {
-	img, err := CaptureWindow(pos, size, resize, toSBS)
+func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool) *image.RGBA {
+	img, err := CaptureWindow(pos, size, resize, toSBS, cursor)
 	for err != nil {
-		img, err = CaptureWindow(pos, size, resize, toSBS)
+		img, err = CaptureWindow(pos, size, resize, toSBS, cursor)
 	}
 	return img
 }

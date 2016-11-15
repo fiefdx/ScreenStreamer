@@ -51,6 +51,7 @@ var Convert int
 var Alpha int
 var Done bool = false
 var ToSBS bool = false
+var Cursor bool = false
 
 func init() {
 	configPath := "./configuration.yml"
@@ -199,6 +200,13 @@ func init() {
 	}
 	ToSBS = to_sbs_tmp
 
+	cursor_tmp, err := Config.GetBool("cursor")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Get Config['cursor'] error: %s\n", err))
+		os.Exit(1)
+	}
+	Cursor = cursor_tmp
+
 	shot_tmp, err := Config.GetInt("shot")
 	if err != nil {
 		fmt.Printf(fmt.Sprintf("Get Config['shot'] error: %s\n", err))
@@ -295,7 +303,8 @@ func main() {
 				img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
 					&screenshot.SIZE{Width, Height},
 					&screenshot.RESIZE{ResizeWidth, ResizeHeight},
-					ToSBS)
+					ToSBS,
+					Cursor)
 				sio := stringio.New()
 				err = ljpeg.Encode(sio, img, &ljpeg.EncoderOptions{Quality: Quality})
 				if err == nil {
@@ -330,7 +339,8 @@ func main() {
 				img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
 					&screenshot.SIZE{Width, Height},
 					&screenshot.RESIZE{ResizeWidth, ResizeHeight},
-					ToSBS)
+					ToSBS,
+					Cursor)
 				handlers.Buffer <- img
 				ss := time.Now()
 				interval := ss.Sub(s)
@@ -375,7 +385,8 @@ func main() {
 				img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
 					&screenshot.SIZE{Width, Height},
 					&screenshot.RESIZE{ResizeWidth, ResizeHeight},
-					ToSBS)
+					ToSBS,
+					Cursor)
 				handlers.Buffer <- img
 				ss := time.Now()
 				interval := ss.Sub(s)
@@ -425,7 +436,8 @@ func main() {
 					img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
 						&screenshot.SIZE{Width, Height},
 						&screenshot.RESIZE{ResizeWidth, ResizeHeight},
-						ToSBS)
+						ToSBS,
+						Cursor)
 					sio := stringio.New()
 					err = ljpeg.Encode(sio, img, &ljpeg.EncoderOptions{Quality: Quality})
 					if err == nil {
@@ -469,7 +481,8 @@ func main() {
 				img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
 					&screenshot.SIZE{Width, Height},
 					&screenshot.RESIZE{ResizeWidth, ResizeHeight},
-					ToSBS)
+					ToSBS,
+					Cursor)
 				handlers.BufferArray[n] <- img
 				if !first {
 					sio := <-handlers.ImagesArray[n]
@@ -571,7 +584,8 @@ func main() {
 					img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
 						&screenshot.SIZE{Width, Height},
 						&screenshot.RESIZE{ResizeWidth, ResizeHeight},
-						ToSBS)
+						ToSBS,
+						Cursor)
 					handlers.BufferArray[convert_id] <- img
 				}
 			}(i)

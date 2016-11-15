@@ -99,6 +99,7 @@ var (
 	procGetAsyncKeyState              = moduser32.NewProc("GetAsyncKeyState")
 	procToAscii                       = moduser32.NewProc("ToAscii")
 	procSwapMouseButton               = moduser32.NewProc("SwapMouseButton")
+	procGetCursorInfo                 = moduser32.NewProc("GetCursorInfo")
 	procGetCursorPos                  = moduser32.NewProc("GetCursorPos")
 	procSetCursorPos                  = moduser32.NewProc("SetCursorPos")
 	procSetCursor                     = moduser32.NewProc("SetCursor")
@@ -818,6 +819,12 @@ func ToAscii(uVirtKey, uScanCode uint, lpKeyState *byte, lpChar *uint16, uFlags 
 func SwapMouseButton(fSwap bool) bool {
 	ret, _, _ := procSwapMouseButton.Call(
 		uintptr(BoolToBOOL(fSwap)))
+	return ret != 0
+}
+
+func GetCursorInfo(pCursorInfo *CURSORINFO) bool {
+	pCursorInfo.CbSize = DWORD(unsafe.Sizeof(*pCursorInfo))
+	ret, _, _ := procGetCursorInfo.Call(uintptr(unsafe.Pointer(pCursorInfo)))
 	return ret != 0
 }
 
