@@ -72,6 +72,8 @@ Install & Run ScreenStreamer
 
    # to_sbs, convert 2d image to side-by-side images
    to_sbs: false
+   # cursor, capture cursor or not
+   cursor: false
 
    # how many screen shoters to work, less than 10
    shot: 1

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"reflect"
+	"time"
 	"unsafe"
 	"w32"
 )
@@ -276,6 +277,7 @@ func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor 
 	img, err := CaptureWindow(pos, size, resize, toSBS, cursor)
 	for err != nil {
 		img, err = CaptureWindow(pos, size, resize, toSBS, cursor)
+		time.Sleep(10 * time.Millisecond)
 	}
 	return img
 }
