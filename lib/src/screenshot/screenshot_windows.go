@@ -26,6 +26,12 @@ type CAPTURE struct {
 	B    *[]byte
 }
 
+func InitConn() {
+}
+
+func CloseConn() {
+}
+
 func ScreenRect() (image.Rectangle, error) {
 	hDC := w32.GetDC(0)
 	if hDC == 0 {

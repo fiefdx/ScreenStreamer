@@ -9,6 +9,8 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 )
 
+var Conn *xgb.Conn
+
 type POS struct {
 	X, Y int
 }
@@ -24,6 +26,18 @@ type RESIZE struct {
 type CAPTURE struct {
 	W, H int
 	B    *[]byte
+}
+
+func InitConn() {
+	var err error
+	Conn, err = xgb.NewConn()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func CloseConn() {
+	Conn.Close()
 }
 
 func ScreenRect() (image.Rectangle, error) {
@@ -72,23 +86,18 @@ func CaptureRect(rect image.Rectangle) (*image.RGBA, error) {
 }
 
 func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool) (*image.RGBA, error) {
-	c, err := xgb.NewConn()
-	if err != nil {
-		fmt.Errorf("error occurred, when xgb.NewConn err:%v.\n", err)
-	}
-	defer c.Close()
-
+	c := Conn
 	screen := xproto.Setup(c).DefaultScreen(c)
 
 	aname := "_NET_ACTIVE_WINDOW"
 	activeAtom, err := xproto.InternAtom(c, true, uint16(len(aname)), aname).Reply()
 	if err != nil {
-		fmt.Errorf("error occurred, when xproto.InternAtom 0 err:%v.\n", err)
+		return nil, fmt.Errorf("error occurred, when xproto.InternAtom 0 err:%v.\n", err)
 	}
 
 	reply, err := xproto.GetProperty(c, false, screen.Root, activeAtom.Atom, xproto.GetPropertyTypeAny, 0, (1<<32)-1).Reply()
 	if err != nil {
-		fmt.Errorf("error occurred, when xproto.GetProperty 0 err:%v.\n", err)
+		return nil, fmt.Errorf("error occurred, when xproto.GetProperty 0 err:%v.\n", err)
 	}
 	windowId := xproto.Window(xgb.Get32(reply.Value))
 

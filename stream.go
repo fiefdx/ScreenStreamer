@@ -7,6 +7,8 @@ package main
 import (
 	"fmt"
 	"go-gypsy/yaml"
+	"image"
+	// "image/jpeg"
 	"net"
 	"net/http"
 	"os"
@@ -18,6 +20,7 @@ import (
 
 	logger "ScreenStreamer/logger_seelog"
 	ljpeg "github.com/pixiv/go-libjpeg/jpeg"
+	_ "net/http/pprof"
 	"screenshot"
 	"seelog"
 	"stoppableListener"
@@ -52,6 +55,20 @@ var Alpha int
 var Done bool = false
 var ToSBS bool = false
 var Cursor bool = false
+
+func CaptureWindowMust(pos *screenshot.POS, size *screenshot.SIZE, resize *screenshot.RESIZE, toSBS bool, cursor bool) *image.RGBA {
+	img, err := screenshot.CaptureWindow(pos, size, resize, toSBS, cursor)
+	errN := 0
+	for err != nil {
+		Log.Error(fmt.Sprintf("CaptureWindowMust Error: %v", err))
+		img, err = screenshot.CaptureWindow(pos, size, resize, toSBS, cursor)
+		time.Sleep(time.Duration(10)*time.Millisecond + time.Duration(errN*50)*time.Millisecond)
+		if errN < 20 {
+			errN += 1
+		}
+	}
+	return img
+}
 
 func init() {
 	configPath := "./configuration.yml"
@@ -291,6 +308,8 @@ func main() {
 		server.Serve(sl)
 	}()
 
+	screenshot.InitConn()
+
 	if Mode == "single" {
 		go func() {
 			std_interval := float64(1.0 / float64(Fps))
@@ -300,7 +319,7 @@ func main() {
 				if Done {
 					return
 				}
-				img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
+				img := CaptureWindowMust(&screenshot.POS{Left, Top},
 					&screenshot.SIZE{Width, Height},
 					&screenshot.RESIZE{ResizeWidth, ResizeHeight},
 					ToSBS,
@@ -336,7 +355,7 @@ func main() {
 				if Done {
 					return
 				}
-				img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
+				img := CaptureWindowMust(&screenshot.POS{Left, Top},
 					&screenshot.SIZE{Width, Height},
 					&screenshot.RESIZE{ResizeWidth, ResizeHeight},
 					ToSBS,
@@ -382,7 +401,7 @@ func main() {
 				if Done {
 					return
 				}
-				img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
+				img := CaptureWindowMust(&screenshot.POS{Left, Top},
 					&screenshot.SIZE{Width, Height},
 					&screenshot.RESIZE{ResizeWidth, ResizeHeight},
 					ToSBS,
@@ -433,7 +452,7 @@ func main() {
 					if Done {
 						return
 					}
-					img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
+					img := CaptureWindowMust(&screenshot.POS{Left, Top},
 						&screenshot.SIZE{Width, Height},
 						&screenshot.RESIZE{ResizeWidth, ResizeHeight},
 						ToSBS,
@@ -478,7 +497,7 @@ func main() {
 					}
 					n = 0
 				}
-				img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
+				img := CaptureWindowMust(&screenshot.POS{Left, Top},
 					&screenshot.SIZE{Width, Height},
 					&screenshot.RESIZE{ResizeWidth, ResizeHeight},
 					ToSBS,
@@ -581,7 +600,7 @@ func main() {
 						return
 					}
 					convert_id := <-handlers.TasksArray[id]
-					img := screenshot.CaptureWindowMust(&screenshot.POS{Left, Top},
+					img := CaptureWindowMust(&screenshot.POS{Left, Top},
 						&screenshot.SIZE{Width, Height},
 						&screenshot.RESIZE{ResizeWidth, ResizeHeight},
 						ToSBS,
@@ -601,6 +620,7 @@ func main() {
 					img := <-handlers.BufferArray[id]
 					sio := stringio.New()
 					err = ljpeg.Encode(sio, img, &ljpeg.EncoderOptions{Quality: Quality})
+					// err = jpeg.Encode(sio, img, &jpeg.Options{Quality})
 					if err == nil {
 						sio.Seek(0, 0)
 						handlers.ImagesArray[id] <- sio
@@ -620,6 +640,7 @@ func main() {
 	}
 
 	defer Log.Flush()
+	screenshot.CloseConn()
 	Done = true
 	Log.Info(fmt.Sprintf("Stopping server"))
 	Log.Info(fmt.Sprintf("Server will stop in 5 seconds ..."))

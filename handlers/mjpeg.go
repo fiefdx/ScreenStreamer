@@ -46,16 +46,17 @@ func MjpegHandler(w http.ResponseWriter, r *http.Request) {
 
 		partWriter, partErr := mimeWriter.CreatePart(partHeader)
 		if nil != partErr {
-			Log.Debug(fmt.Sprintf(partErr.Error()))
+			Log.Error(fmt.Sprintf(partErr.Error()))
 			break
 		}
 
 		snapshot := <-Images
 		if _, writeErr := partWriter.Write(snapshot.GetValueBytes()); nil != writeErr {
-			Log.Debug(fmt.Sprintf(writeErr.Error()))
+			Log.Error(fmt.Sprintf(writeErr.Error()))
 		}
 		n += 1
 	}
 
+	mimeWriter.Close()
 	Log.Debug(fmt.Sprintf("Success request"))
 }
