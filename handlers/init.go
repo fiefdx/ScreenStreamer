@@ -20,8 +20,12 @@ var Done chan bool
 var Buffer chan *image.RGBA
 var BufferArray [10]chan *image.RGBA
 var Images chan *stringio.StringIO
+var ImageBuffer *stringio.StringIO
 var ImagesArray [10]chan *stringio.StringIO
 var TasksArray [10]chan int
+var Fps int
+var Alpha int
+var Broadcast bool
 
 var Quality int
 var Left int
@@ -36,6 +40,16 @@ func InitLog() {
 	}
 	fmt.Printf("GetLogger: %s\n", "init")
 	Log = *Logger
+}
+
+func GetImage() *stringio.StringIO {
+	select {
+    case snapshot := <-Images:
+        ImageBuffer = snapshot
+		return ImageBuffer
+    default:
+		return ImageBuffer
+    }
 }
 
 func InitBuf(b_size, i_size, cb_size, ci_size, ct_size int) {
@@ -73,12 +87,15 @@ func InitBuf(b_size, i_size, cb_size, ci_size, ct_size int) {
 	TasksArray[9] = make(chan int, ct_size)
 }
 
-func InitCap(left, top, width, height, quality int) {
+func InitCap(left, top, width, height, quality, fps, alpha int, broadcast bool) {
 	Left = left
 	Top = top
 	Width = width
 	Height = height
 	Quality = quality
+	Fps = fps
+	Alpha = alpha
+	Broadcast = broadcast
 }
 
 func init() {

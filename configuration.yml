@@ -16,6 +16,8 @@ threads: 5
 fps: 30
 # target jpeg quality
 quality: 96
+# broadcast,true for broadcast, false for point to point
+broadcast: false
 # screenshot image
 # left offset, 0 is default
 # top offset, 0 is default

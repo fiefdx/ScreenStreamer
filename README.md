@@ -1,8 +1,8 @@
 ScreenStreamer
 ==============
 A golang project, aim for stream one pc's active window (windows or linux) to another device as MJPEG over http as soon as possible,
-it's not a broadcast server, it's for point to point service, if you want to use tridef-3d and you don't have a professional VR head
-set, and you have a smart phone, I think you will like this application.
+it can be a broadcast service or a point to point service as you want, if you want to use tridef-3d but you don't have a professional
+VR head set, and you have a smart phone, I think you will like this application.
 
 ScreenShots
 -----------
@@ -50,6 +50,8 @@ Install & Run ScreenStreamer
    fps: 23
    # target jpeg quality
    quality: 97
+   # broadcast,true for broadcast, false for point to point
+   broadcast: false
    # screenshot image 
    # left offset, 0 is default
    # top offset, 0 is default
