@@ -1,7 +1,15 @@
 *.log
 *.log.*
 stream
+rtmp
 test/screenshot
 test/*.jpeg
 test/*.jpg
+*.h264
+*.flv
+*.mp4
+*.txt
+*.mp3
+*.jpeg
+*.jpg
 lib/pkg
