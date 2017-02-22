@@ -3,6 +3,7 @@ package screenshot
 import (
 	"fmt"
 	"image"
+	"log"
 	"reflect"
 	"time"
 	"unsafe"
@@ -43,12 +44,38 @@ func ScreenRect() (image.Rectangle, error) {
 	return image.Rect(0, 0, x, y), nil
 }
 
+func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool) *image.RGBA {
+	img, err := CaptureWindow(pos, size, resize, toSBS, cursor)
+	for err != nil {
+		img, err = CaptureWindow(pos, size, resize, toSBS, cursor)
+		time.Sleep(10 * time.Millisecond)
+	}
+	return img
+}
+
+func CaptureScreenYCbCrMust(toSBS bool, cursor bool) *image.YCbCr {
+	img, err := CaptureScreenYCbCr444()
+	for err != nil {
+		img, err = CaptureScreenYCbCr444()
+		time.Sleep(10 * time.Millisecond)
+	}
+	return img
+}
+
 func CaptureScreen() (*image.RGBA, error) {
 	r, e := ScreenRect()
 	if e != nil {
 		return nil, e
 	}
 	return CaptureRect(r)
+}
+
+func CaptureScreenYCbCr444() (*image.YCbCr, error) {
+	r, e := ScreenRect() // 20us
+	if e != nil {
+		return nil, e
+	}
+	return CaptureRectYCbCr444(r)
 }
 
 func CaptureRect(rect image.Rectangle) (*image.RGBA, error) {
@@ -110,6 +137,76 @@ func CaptureRect(rect image.Rectangle) (*image.RGBA, error) {
 	}
 
 	img := &image.RGBA{imageBytes, 4 * x, image.Rect(0, 0, x, y)}
+	return img, nil
+}
+
+func CaptureRectYCbCr444(rect image.Rectangle) (*image.YCbCr, error) {
+	t := time.Now()
+	hDC := w32.GetDC(0)
+	if hDC == 0 {
+		return nil, fmt.Errorf("Could not Get primary display err:%d.\n", w32.GetLastError())
+	}
+	defer w32.ReleaseDC(0, hDC)
+
+	m_hDC := w32.CreateCompatibleDC(hDC)
+	if m_hDC == 0 {
+		return nil, fmt.Errorf("Could not Create Compatible DC err:%d.\n", w32.GetLastError())
+	}
+	defer w32.DeleteDC(m_hDC)
+
+	x, y := rect.Dx(), rect.Dy()
+
+	bt := w32.BITMAPINFO{}
+	bt.BmiHeader.BiSize = uint32(reflect.TypeOf(bt.BmiHeader).Size())
+	bt.BmiHeader.BiWidth = int32(x)
+	bt.BmiHeader.BiHeight = int32(-y)
+	bt.BmiHeader.BiPlanes = 1
+	bt.BmiHeader.BiBitCount = 32
+	bt.BmiHeader.BiCompression = w32.BI_RGB
+
+	ptr := unsafe.Pointer(uintptr(0))
+
+	m_hBmp := w32.CreateDIBSection(m_hDC, &bt, w32.DIB_RGB_COLORS, &ptr, 0, 0)
+	if m_hBmp == 0 {
+		return nil, fmt.Errorf("Could not Create DIB Section err:%d.\n", w32.GetLastError())
+	}
+	if m_hBmp == w32.InvalidParameter {
+		return nil, fmt.Errorf("One or more of the input parameters is invalid while calling CreateDIBSection.\n")
+	}
+	defer w32.DeleteObject(w32.HGDIOBJ(m_hBmp))
+
+	obj := w32.SelectObject(m_hDC, w32.HGDIOBJ(m_hBmp))
+	if obj == 0 {
+		return nil, fmt.Errorf("error occurred and the selected object is not a region err:%d.\n", w32.GetLastError())
+	}
+	if obj == 0xffffffff { //GDI_ERROR
+		return nil, fmt.Errorf("GDI_ERROR while calling SelectObject err:%d.\n", w32.GetLastError())
+	}
+	defer w32.DeleteObject(obj)
+
+	//Note:BitBlt contains bad error handling, we will just assume it works and if it doesn't it will panic :x
+	w32.BitBlt(m_hDC, 0, 0, x, y, hDC, rect.Min.X, rect.Min.Y, w32.SRCCOPY)
+
+	var slice []byte
+	hdrp := (*reflect.SliceHeader)(unsafe.Pointer(&slice))
+	hdrp.Data = uintptr(ptr)
+	hdrp.Len = x * y * 4
+	hdrp.Cap = x * y * 4
+
+	dataLen := len(slice)
+
+	tt := time.Now()
+	img := image.NewYCbCr(image.Rect(0, 0, x, y), image.YCbCrSubsampleRatio444)
+	img.Y = make([]uint8, dataLen/4)
+	img.Cb = make([]uint8, dataLen/4)
+	img.Cr = make([]uint8, dataLen/4)
+	ttt := time.Now()
+
+	CRGBToYCbCr444Windows(slice, img.Y, img.Cb, img.Cr)
+	tttt := time.Now()
+	log.Println(fmt.Sprintf("Shot: %v, Create: %v, Convert: %v", tt.Sub(t), ttt.Sub(tt), tttt.Sub(ttt)))
+	// Shot: 15.510277ms, Create: 2.024195ms, Convert: 25.398941ms
+
 	return img, nil
 }
 
@@ -277,13 +374,4 @@ func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool
 	}
 
 	return img, nil
-}
-
-func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool) *image.RGBA {
-	img, err := CaptureWindow(pos, size, resize, toSBS, cursor)
-	for err != nil {
-		img, err = CaptureWindow(pos, size, resize, toSBS, cursor)
-		time.Sleep(10 * time.Millisecond)
-	}
-	return img
 }
