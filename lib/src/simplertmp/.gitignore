@@ -1,0 +1,6 @@
+*.log
+*.log.*
+test/screenshot
+test/*.jpeg
+test/*.jpg
+lib/pkg
