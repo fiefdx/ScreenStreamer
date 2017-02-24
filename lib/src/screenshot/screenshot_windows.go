@@ -361,10 +361,7 @@ func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool
 	hdrp.Cap = width * height * 4
 
 	imageBytes := make([]byte, len(slice))
-
-	for i := 0; i < len(imageBytes); i += 4 { // this loop take almost all time
-		imageBytes[i], imageBytes[i+2], imageBytes[i+1], imageBytes[i+3] = slice[i+2], slice[i], slice[i+1], slice[i+3]
-	}
+	ImageToRGBAWindows(slice, imageBytes)
 
 	var img *image.RGBA
 	if toSBS {

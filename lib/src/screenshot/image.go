@@ -87,6 +87,22 @@ static void ImageRGBToYCbCr444(unsigned char *data, int32_t length, unsigned cha
 	}
 }
 
+static void ImageToRGBAWindows(unsigned char *data, int32_t length, unsigned char *bytes) {
+	for (int32_t i = 0; i < length; i += 4) {
+		bytes[i] = data[i+2];
+		bytes[i+2] = data[i];
+		bytes[i+1] = data[i+1];
+		bytes[i+3] = data[i+3];
+	}
+}
+
+static void ImageToRGBALinux(unsigned char *data, int32_t length) {
+	for (int32_t i = 0; i < length; i += 4) {
+		data[i] = data[i+2];
+		data[i+2] = data[i];
+		data[i+3] = 255;
+	}
+}
 */
 import "C"
 import (
@@ -114,6 +130,17 @@ func CRGBToYCbCr444Windows(data, y, cb, cr []byte) {
 		(*C.uchar)(unsafe.Pointer(&y[0])),
 		(*C.uchar)(unsafe.Pointer(&cb[0])),
 		(*C.uchar)(unsafe.Pointer(&cr[0])))
+}
+
+func ImageToRGBALinux(data []byte) {
+	C.ImageToRGBALinux((*C.uchar)(unsafe.Pointer(&data[0])),
+		C.int32_t(len(data)))
+}
+
+func ImageToRGBAWindows(data, bytes []byte) {
+	C.ImageToRGBAWindows((*C.uchar)(unsafe.Pointer(&data[0])),
+		C.int32_t(len(data)),
+		(*C.uchar)(unsafe.Pointer(&bytes[0])))
 }
 
 func RGBAToYCbCr444(img *image.RGBA) *image.YCbCr {

@@ -2,7 +2,6 @@
 *.log.*
 stream
 rtmp
-test/screenshot
 test/*.jpeg
 test/*.jpg
 *.h264
