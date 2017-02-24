@@ -10,13 +10,6 @@ var Buffer chan *flv.AVCVideoFrame
 var FrameBuffer *flv.AVCVideoFrame
 var Fps int
 var Alpha int
-var Broadcast bool
-
-var Quality int
-var Left int
-var Top int
-var Width int
-var Height int
 
 func GetFrame() *flv.AVCVideoFrame {
 	select {
@@ -40,15 +33,9 @@ func InitBuf(b_size int) {
 	Buffer = make(chan *flv.AVCVideoFrame, b_size)
 }
 
-func InitCap(left, top, width, height, quality, fps, alpha int, broadcast bool) {
-	Left = left
-	Top = top
-	Width = width
-	Height = height
-	Quality = quality
+func InitCap(fps, alpha int) {
 	Fps = fps
 	Alpha = alpha
-	Broadcast = broadcast
 }
 
 type ServerHandler interface {

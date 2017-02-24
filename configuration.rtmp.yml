@@ -1,0 +1,36 @@
+# ScreenStreamer by YangHaitao
+
+# log level
+# a value of (DEBUG, INFO, WARN, ERROR)
+log_level: INFO
+log_path: logs
+
+# host and port that you will use other device to request this service
+server_host: 0.0.0.0
+server_port: 1935
+
+# how many threads you want to run goroutines
+threads: 5
+
+# target fps
+fps: 30
+
+# bit_rate, default is 64M
+bit_rate: 64
+
+# don't change this options, if you don't know how it works
+buffer_queue_size: 0
+
+# to_sbs, convert 2d image to side-by-side images
+to_sbs: false
+# cursor, capture cursor or not
+cursor: false
+
+# alpha is an option to make the fps stable
+# every frame sleep +/- (alpha / 100) * (1 / fps) senonds
+alpha: 15
+# the application work mode
+# single, just a worker with shoter & converter functions
+mode: single
+
+# fps 22 quality 95 - 100 1600 * 900 threads 5 convert 4

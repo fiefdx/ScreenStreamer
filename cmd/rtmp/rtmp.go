@@ -38,25 +38,12 @@ var ServerHost string
 var ServerPort string
 var Threads int
 var Fps int
-var Quality int
-var Left int
-var Top int
-var Width int
-var Height int
-var ResizeWidth int
-var ResizeHeight int
+var BitRate int
 var Mode string
-var Tasks_Queue_Size int
 var Buffer_Queue_Size int
-var Images_Queue_Size int
-var Convert_Buffer_Size int
-var Convert_Images_Size int
-var Shot int
-var Convert int
 var Alpha int
 var Done bool = false
 var ToSBS bool = false
-var Broadcast bool = false
 var Cursor bool = false
 
 func GetFirstAvc(c *codec.H264Encoder, width, height uint16) *flv.AVCVideoFrame {
@@ -167,7 +154,7 @@ func CaptureScreenMustAvc(c *codec.H264Encoder, dts uint32) *flv.AVCVideoFrame {
 }
 
 func init() {
-	configPath := "./configuration.yml"
+	configPath := "./configuration.rtmp.yml"
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		fmt.Printf("Init Config (%s) error: (%s) does not exist!\n", configPath)
@@ -190,7 +177,7 @@ func init() {
 	// fmt.Printf("main init logger start\n")
 	// Log = logger.NewLogger(logPath, logLevel)
 	// 20M = 20971520
-	Logger, err := logger.NewLogger("main", logPath, "stream.log", logLevel, "size", "20971520", "5", true)
+	Logger, err := logger.NewLogger("main", logPath, "rtmp.log", logLevel, "size", "20971520", "5", true)
 	if err != nil {
 		fmt.Printf(fmt.Sprintf("Init logger error: %s\n", err))
 		os.Exit(1)
@@ -211,47 +198,12 @@ func init() {
 	}
 	ServerPort = string(tmp_server_port) // strconv.FormatInt(tmp_server_port, 10)
 
-	quality_tmp, err := Config.GetInt("quality")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['quality'] error: %s\n", err))
-		os.Exit(1)
-	}
-	Quality = int(quality_tmp)
-
-	tasks_queue_size_tmp, err := Config.GetInt("tasks_queue_size")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['tasks_queue_size'] error: %s\n", err))
-		os.Exit(1)
-	}
-	Tasks_Queue_Size = int(tasks_queue_size_tmp)
-
 	buffer_queue_size_tmp, err := Config.GetInt("buffer_queue_size")
 	if err != nil {
 		fmt.Printf(fmt.Sprintf("Get Config['buffer_queue_size'] error: %s\n", err))
 		os.Exit(1)
 	}
 	Buffer_Queue_Size = int(buffer_queue_size_tmp)
-
-	images_queue_size_tmp, err := Config.GetInt("images_queue_size")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['images_queue_size'] error: %s\n", err))
-		os.Exit(1)
-	}
-	Images_Queue_Size = int(images_queue_size_tmp)
-
-	convert_buffer_size_tmp, err := Config.GetInt("convert_buffer_size")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['convert_buffer_size'] error: %s\n", err))
-		os.Exit(1)
-	}
-	Convert_Buffer_Size = int(convert_buffer_size_tmp)
-
-	convert_images_size_tmp, err := Config.GetInt("convert_images_size")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['convert_images_size'] error: %s\n", err))
-		os.Exit(1)
-	}
-	Convert_Images_Size = int(convert_images_size_tmp)
 
 	fps_tmp, err := Config.GetInt("fps")
 	if err != nil {
@@ -260,56 +212,14 @@ func init() {
 	}
 	Fps = int(fps_tmp)
 
-	broadcast_tmp, err := Config.GetBool("broadcast")
+	bit_rate_tmp, err := Config.GetInt("bit_rate")
 	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['broadcast'] error: %s\n", err))
+		fmt.Printf(fmt.Sprintf("Get Config['bit_rate'] error: %s\n", err))
 		os.Exit(1)
 	}
-	Broadcast = broadcast_tmp
+	BitRate = int(bit_rate_tmp)
 
 	rtmp.InitBuf(Buffer_Queue_Size)
-
-	left_tmp, err := Config.GetInt("left")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['left'] error: %s\n", err))
-		os.Exit(1)
-	}
-	Left = int(left_tmp)
-
-	top_tmp, err := Config.GetInt("top")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['top'] error: %s\n", err))
-		os.Exit(1)
-	}
-	Top = int(top_tmp)
-
-	width_tmp, err := Config.GetInt("width")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['width'] error: %s\n", err))
-		os.Exit(1)
-	}
-	Width = int(width_tmp)
-
-	height_tmp, err := Config.GetInt("height")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['height'] error: %s\n", err))
-		os.Exit(1)
-	}
-	Height = int(height_tmp)
-
-	resize_width_tmp, err := Config.GetInt("resize_width")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['resize_width'] error: %s\n", err))
-		os.Exit(1)
-	}
-	ResizeWidth = int(resize_width_tmp)
-
-	resize_height_tmp, err := Config.GetInt("resize_height")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['resize_height'] error: %s\n", err))
-		os.Exit(1)
-	}
-	ResizeHeight = int(resize_height_tmp)
 
 	to_sbs_tmp, err := Config.GetBool("to_sbs")
 	if err != nil {
@@ -325,16 +235,6 @@ func init() {
 	}
 	Cursor = cursor_tmp
 
-	shot_tmp, err := Config.GetInt("shot")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['shot'] error: %s\n", err))
-		os.Exit(1)
-	}
-	if shot_tmp > 10 {
-		shot_tmp = 10
-	}
-	Shot = int(shot_tmp)
-
 	alpha_tmp, err := Config.GetInt("alpha")
 	if err != nil {
 		fmt.Printf(fmt.Sprintf("Get Config['alpha'] error: %s\n", err))
@@ -342,17 +242,7 @@ func init() {
 	}
 	Alpha = int(alpha_tmp)
 
-	convert_tmp, err := Config.GetInt("convert")
-	if err != nil {
-		fmt.Printf(fmt.Sprintf("Get Config['convert'] error: %s\n", err))
-		os.Exit(1)
-	}
-	if convert_tmp > 10 {
-		convert_tmp = 10
-	}
-	Convert = int(convert_tmp)
-
-	rtmp.InitCap(Left, Top, Width, Height, Quality, Fps, Alpha, Broadcast)
+	rtmp.InitCap(Fps, Alpha)
 
 	mode_tmp, err := Config.Get("mode")
 	if err != nil {
@@ -376,6 +266,43 @@ func init() {
 	Log.Info(fmt.Sprintf("Server port: %s", ServerPort))
 }
 
+func worker(c *codec.H264Encoder, img *image.YCbCr) {
+	std_interval := float64(1.0 / float64(Fps))
+	time_to_sleep := std_interval
+	s := time.Now()
+	dts := uint32(0)
+	avc := GetFirstAvc(c, uint16(img.Rect.Dx()), uint16(img.Rect.Dy()))
+	rtmp.Buffer <- avc
+	for {
+		if Done {
+			return
+		}
+		if dts == 0xffffff {
+			dts = uint32(0)
+		}
+		t := time.Now()
+		avc := CaptureScreenMustAvc(c, dts)
+		tt := time.Now()
+		log.Println(fmt.Sprintf("CaptureScreenMustAvc use: %v", tt.Sub(t)))
+		rtmp.Buffer <- avc
+		ss := time.Now()
+		interval := ss.Sub(s)
+		if interval.Seconds() < std_interval {
+			time_to_sleep += float64(Alpha) * time_to_sleep / float64(100)
+		} else {
+			time_to_sleep -= float64(Alpha) * time_to_sleep / float64(100)
+		}
+		if time_to_sleep < float64(0) {
+			time_to_sleep = float64(0)
+		}
+		s = ss
+		sleep_time, _ := time.ParseDuration(fmt.Sprintf("%fs", time_to_sleep))
+		time.Sleep(sleep_time)
+		Log.Debug(fmt.Sprintf("sleep: %v", sleep_time))
+		dts += uint32(std_interval * 1000)
+	}
+}
+
 func main() {
 	sigs := make(chan os.Signal, 1)
 
@@ -383,7 +310,7 @@ func main() {
 
 	screenshot.InitConn()
 	img := screenshot.CaptureScreenYCbCrMust(false, false)
-	c, err := codec.NewH264Encoder(img.Rect.Dx(), img.Rect.Dy(), 0, Fps, 1, Fps, image.YCbCrSubsampleRatio444, "bufsize,0k,0", "pixel_format,yuv444p,0")
+	c, err := codec.NewH264Encoder(img.Rect.Dx(), img.Rect.Dy(), 0, Fps, 1, Fps, BitRate, image.YCbCrSubsampleRatio444, "bufsize,0k,0", "pixel_format,yuv444p,0")
 	if err != nil {
 		panic(err)
 	}
@@ -401,79 +328,9 @@ func main() {
 	}()
 
 	if Mode == "single" {
-		go func() {
-			std_interval := float64(1.0 / float64(Fps))
-			time_to_sleep := std_interval
-			s := time.Now()
-			dts := uint32(0)
-			avc := GetFirstAvc(c, uint16(img.Rect.Dx()), uint16(img.Rect.Dy()))
-			rtmp.Buffer <- avc
-			for {
-				if Done {
-					return
-				}
-				if dts == 0xffffff {
-					dts = uint32(0)
-				}
-				t := time.Now()
-				avc := CaptureScreenMustAvc(c, dts)
-				tt := time.Now()
-				log.Println(fmt.Sprintf("CaptureScreenMustAvc use: %v", tt.Sub(t)))
-				rtmp.Buffer <- avc
-				ss := time.Now()
-				interval := ss.Sub(s)
-				if interval.Seconds() < std_interval {
-					time_to_sleep += float64(Alpha) * time_to_sleep / float64(100)
-				} else {
-					time_to_sleep -= float64(Alpha) * time_to_sleep / float64(100)
-				}
-				if time_to_sleep < float64(0) {
-					time_to_sleep = float64(0)
-				}
-				s = ss
-				sleep_time, _ := time.ParseDuration(fmt.Sprintf("%fs", time_to_sleep))
-				time.Sleep(sleep_time)
-				Log.Debug(fmt.Sprintf("sleep: %v", sleep_time))
-				dts += uint32(std_interval * 1000)
-			}
-		}()
+		go worker(c, img)
 	} else {
-		go func() {
-			std_interval := float64(1.0 / float64(Fps))
-			time_to_sleep := std_interval
-			s := time.Now()
-			dts := uint32(0)
-			avc := GetFirstAvc(c, uint16(img.Rect.Dx()), uint16(img.Rect.Dy()))
-			rtmp.Buffer <- avc
-			for {
-				if Done {
-					return
-				}
-				if dts == 0xffffff {
-					dts = uint32(0)
-				}
-				t := time.Now()
-				avc := CaptureScreenMustAvc(c, dts)
-				tt := time.Now()
-				log.Println(fmt.Sprintf("CaptureScreenMustAvc use: %v", tt.Sub(t)))
-				rtmp.Buffer <- avc
-				ss := time.Now()
-				interval := ss.Sub(s)
-				if interval.Seconds() < std_interval {
-					time_to_sleep += float64(Alpha) * time_to_sleep / float64(100)
-				} else {
-					time_to_sleep -= float64(Alpha) * time_to_sleep / float64(100)
-				}
-				if time_to_sleep < float64(0) {
-					time_to_sleep = float64(0)
-				}
-				s = ss
-				sleep_time, _ := time.ParseDuration(fmt.Sprintf("%fs", time_to_sleep))
-				time.Sleep(sleep_time)
-				Log.Debug(fmt.Sprintf("sleep: %v", sleep_time))
-				dts += uint32(std_interval * 1000)
-			}
-		}()
+		go worker(c, img)
 	}
 
 	select {
