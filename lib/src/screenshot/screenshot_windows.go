@@ -196,18 +196,17 @@ func CaptureRectYCbCr444(rect image.Rectangle) (*image.YCbCr, error) {
 	dataLen := len(slice)
 
 	tt := time.Now()
-	img := image.NewYCbCr(image.Rect(0, 0, x, y), image.YCbCrSubsampleRatio444)
-	img.Y = make([]uint8, dataLen/4)
-	img.Cb = make([]uint8, dataLen/4)
-	img.Cr = make([]uint8, dataLen/4)
+	if ImageCache == nil {
+		ImageCache = image.NewYCbCr(image.Rect(0, 0, x, y), image.YCbCrSubsampleRatio444)
+	}
 	ttt := time.Now()
 
-	CRGBToYCbCr444Windows(slice, img.Y, img.Cb, img.Cr)
+	CRGBToYCbCr444Windows(slice, ImageCache.Y, ImageCache.Cb, ImageCache.Cr)
 	tttt := time.Now()
 	log.Println(fmt.Sprintf("Shot: %v, Create: %v, Convert: %v", tt.Sub(t), ttt.Sub(tt), tttt.Sub(ttt)))
 	// Shot: 15.510277ms, Create: 2.024195ms, Convert: 25.398941ms
 
-	return img, nil
+	return ImageCache, nil
 }
 
 func CaptureWindowByte(pos *POS, size *SIZE) (*CAPTURE, error) {

@@ -6,8 +6,7 @@ package screenshot
 #include <stdint.h>
 #include <string.h>
 
-struct YCbCr
-{
+struct YCbCr {
 	unsigned char Y;
 	unsigned char Cb;
 	unsigned char Cr;
@@ -33,6 +32,12 @@ struct YCbCr RGBToYCbCr4(unsigned char r, unsigned char g, unsigned char b) {
 	ycbcr.Cr = (unsigned char)(((32768 * r - 27440 * g - 5328 * b) >> 16) + 128);
 
 	return ycbcr;
+}
+
+static void RGBToYCbCr5(unsigned char r, unsigned char g, unsigned char b, unsigned char *y, unsigned char *cb, unsigned char *cr) {
+	*y = (unsigned char)((19595 * r + 38470 * g + 7471 * b) >> 16);
+	*cb = (unsigned char)(((-11056 * r - 21712 * g + 32768 * b) >> 16) + 128);
+	*cr = (unsigned char)(((32768 * r - 27440 * g - 5328 * b) >> 16) + 128);
 }
 
 struct YCbCr RGBToYCbCr3(unsigned char r, unsigned char g, unsigned char b) {
@@ -87,6 +92,14 @@ static void ImageRGBToYCbCr444(unsigned char *data, int32_t length, unsigned cha
 	}
 }
 
+static void ImageRGBToYCbCr4442(unsigned char *data, int32_t length, unsigned char *y, unsigned char *cb, unsigned char *cr) {
+	int32_t n = 0;
+	for (int32_t i = 0; i < length; i += 4) {
+		RGBToYCbCr5(data[i+2], data[i+1], data[i], &y[n], &cb[n], &cr[n]);
+		n += 1;
+	}
+}
+
 static void ImageToRGBAWindows(unsigned char *data, int32_t length, unsigned char *bytes) {
 	for (int32_t i = 0; i < length; i += 4) {
 		bytes[i] = data[i+2];
@@ -111,13 +124,15 @@ import (
 	"unsafe"
 )
 
+var ImageCache *image.YCbCr
+
 func RGBToYCbCr(r, g, b uint8) (y, cb, cr uint8) {
 	ret := C.RGBToYCbCr((C.uchar)(r), (C.uchar)(g), (C.uchar)(b))
 	return uint8(ret.Y), uint8(ret.Cb), uint8(ret.Cr)
 }
 
 func CRGBToYCbCr444Linux(data, y, cb, cr []byte) {
-	C.ImageRGBToYCbCr444((*C.uchar)(unsafe.Pointer(&data[0])),
+	C.ImageRGBToYCbCr4442((*C.uchar)(unsafe.Pointer(&data[0])),
 		C.int32_t(len(data)),
 		(*C.uchar)(unsafe.Pointer(&y[0])),
 		(*C.uchar)(unsafe.Pointer(&cb[0])),
@@ -125,7 +140,7 @@ func CRGBToYCbCr444Linux(data, y, cb, cr []byte) {
 }
 
 func CRGBToYCbCr444Windows(data, y, cb, cr []byte) {
-	C.ImageRGBToYCbCr444((*C.uchar)(unsafe.Pointer(&data[0])),
+	C.ImageRGBToYCbCr4442((*C.uchar)(unsafe.Pointer(&data[0])),
 		C.int32_t(len(data)),
 		(*C.uchar)(unsafe.Pointer(&y[0])),
 		(*C.uchar)(unsafe.Pointer(&cb[0])),

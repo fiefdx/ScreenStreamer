@@ -117,33 +117,19 @@ func CaptureRectYCbCr444(rect image.Rectangle) (*image.YCbCr, error) {
 	}
 
 	data := xImg.Data
-	dataLen := len(data)
 
 	tt := time.Now()
-	img := image.NewYCbCr(image.Rect(0, 0, x, y), image.YCbCrSubsampleRatio444)
-	img.Y = make([]uint8, dataLen/4)
-	img.Cb = make([]uint8, dataLen/4)
-	img.Cr = make([]uint8, dataLen/4)
-	// img.Y = make([]uint8, 0)
-	// img.Cb = make([]uint8, 0)
-	// img.Cr = make([]uint8, 0)
+	if ImageCache == nil {
+		ImageCache = image.NewYCbCr(image.Rect(0, 0, x, y), image.YCbCrSubsampleRatio444)
+	}
 	ttt := time.Now()
 
-	// n := 0
-	// for i := 0; i < dataLen; i += 4 {
-	// 	// y, cb, cr := color.RGBToYCbCr(data[i+2], data[i+1], data[i])
-	// 	y, cb, cr := RGBToYCbCr(data[i+2], data[i+1], data[i])
-	// 	img.Y[n] = y
-	// 	img.Cb[n] = cb
-	// 	img.Cr[n] = cr
-	// 	n += 1
-	// }
-	CRGBToYCbCr444Linux(data, img.Y, img.Cb, img.Cr)
+	CRGBToYCbCr444Linux(data, ImageCache.Y, ImageCache.Cb, ImageCache.Cr)
 	tttt := time.Now()
 	log.Println(fmt.Sprintf("Shot: %v, Create: %v, Convert: %v", tt.Sub(t), ttt.Sub(tt), tttt.Sub(ttt)))
-	// Shot: 15.510277ms, Create: 2.024195ms, Convert: 25.398941ms
+	// Shot: 14.734765ms, Create: 108ns, Convert: 9.515677ms
 
-	return img, nil
+	return ImageCache, nil
 }
 
 func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool) (*image.RGBA, error) {
