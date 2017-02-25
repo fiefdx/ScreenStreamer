@@ -40,6 +40,18 @@ static void RGBToYCbCr5(unsigned char r, unsigned char g, unsigned char b, unsig
 	*cr = (unsigned char)(((32768 * r - 27440 * g - 5328 * b) >> 16) + 128);
 }
 
+static void RGBToY(unsigned char r, unsigned char g, unsigned char b, unsigned char *y) {
+	*y = (unsigned char)((19595 * r + 38470 * g + 7471 * b) >> 16);
+}
+
+static void RGBToCb(unsigned char r, unsigned char g, unsigned char b, unsigned char *cb) {
+	*cb = (unsigned char)(((-11056 * r - 21712 * g + 32768 * b) >> 16) + 128);
+}
+
+static void RGBToCr(unsigned char r, unsigned char g, unsigned char b, unsigned char *cr) {
+	*cr = (unsigned char)(((32768 * r - 27440 * g - 5328 * b) >> 16) + 128);
+}
+
 struct YCbCr RGBToYCbCr3(unsigned char r, unsigned char g, unsigned char b) {
 	struct YCbCr ycbcr;
 	ycbcr.Y = (unsigned char)((2990 * r + 5870 * g + 1140 * b) / 10000);
@@ -100,6 +112,30 @@ static void ImageRGBToYCbCr4442(unsigned char *data, int32_t length, unsigned ch
 	}
 }
 
+static void ImageRGBToY444(unsigned char *data, int32_t length, unsigned char *y) {
+	int32_t n = 0;
+	for (int32_t i = 0; i < length; i += 4) {
+		RGBToY(data[i+2], data[i+1], data[i], &y[n]);
+		n += 1;
+	}
+}
+
+static void ImageRGBToCb444(unsigned char *data, int32_t length, unsigned char *cb) {
+	int32_t n = 0;
+	for (int32_t i = 0; i < length; i += 4) {
+		RGBToCb(data[i+2], data[i+1], data[i], &cb[n]);
+		n += 1;
+	}
+}
+
+static void ImageRGBToCr444(unsigned char *data, int32_t length, unsigned char *cr) {
+	int32_t n = 0;
+	for (int32_t i = 0; i < length; i += 4) {
+		RGBToCr(data[i+2], data[i+1], data[i], &cr[n]);
+		n += 1;
+	}
+}
+
 static void ImageToRGBAWindows(unsigned char *data, int32_t length, unsigned char *bytes) {
 	for (int32_t i = 0; i < length; i += 4) {
 		bytes[i] = data[i+2];
@@ -125,13 +161,34 @@ import (
 )
 
 var ImageCache *image.YCbCr
+var Data chan []byte
+var Y chan []byte
+var Cb chan []byte
+var Cr chan []byte
+var RY chan bool
+var RCb chan bool
+var RCr chan bool
+var R chan bool
+var Range chan []int64
+
+func InitChannels(size int) {
+	Data = make(chan []byte, size)
+	Y = make(chan []byte, size)
+	Cb = make(chan []byte, size)
+	Cr = make(chan []byte, size)
+	RY = make(chan bool, 0)
+	RCb = make(chan bool, 0)
+	RCr = make(chan bool, 0)
+	R = make(chan bool, size)
+	Range = make(chan []int64, size)
+}
 
 func RGBToYCbCr(r, g, b uint8) (y, cb, cr uint8) {
 	ret := C.RGBToYCbCr((C.uchar)(r), (C.uchar)(g), (C.uchar)(b))
 	return uint8(ret.Y), uint8(ret.Cb), uint8(ret.Cr)
 }
 
-func CRGBToYCbCr444Linux(data, y, cb, cr []byte) {
+func CRGBToYCbCr444(data, y, cb, cr []byte) {
 	C.ImageRGBToYCbCr4442((*C.uchar)(unsafe.Pointer(&data[0])),
 		C.int32_t(len(data)),
 		(*C.uchar)(unsafe.Pointer(&y[0])),
@@ -139,12 +196,69 @@ func CRGBToYCbCr444Linux(data, y, cb, cr []byte) {
 		(*C.uchar)(unsafe.Pointer(&cr[0])))
 }
 
-func CRGBToYCbCr444Windows(data, y, cb, cr []byte) {
-	C.ImageRGBToYCbCr4442((*C.uchar)(unsafe.Pointer(&data[0])),
+func CRGBToY444(data, y []byte) {
+	C.ImageRGBToY444((*C.uchar)(unsafe.Pointer(&data[0])),
 		C.int32_t(len(data)),
-		(*C.uchar)(unsafe.Pointer(&y[0])),
-		(*C.uchar)(unsafe.Pointer(&cb[0])),
+		(*C.uchar)(unsafe.Pointer(&y[0])))
+}
+
+func CRGBToCb444(data, cb []byte) {
+	C.ImageRGBToCb444((*C.uchar)(unsafe.Pointer(&data[0])),
+		C.int32_t(len(data)),
+		(*C.uchar)(unsafe.Pointer(&cb[0])))
+}
+
+func CRGBToCr444(data, cr []byte) {
+	C.ImageRGBToCr444((*C.uchar)(unsafe.Pointer(&data[0])),
+		C.int32_t(len(data)),
 		(*C.uchar)(unsafe.Pointer(&cr[0])))
+}
+
+func CRGBToYCbCr444Range(data, y, cb, cr []byte, r []int64) {
+	C.ImageRGBToYCbCr4442((*C.uchar)(unsafe.Pointer(&data[r[0]])),
+		C.int32_t(r[1]),
+		(*C.uchar)(unsafe.Pointer(&y[r[0]/4])),
+		(*C.uchar)(unsafe.Pointer(&cb[r[0]/4])),
+		(*C.uchar)(unsafe.Pointer(&cr[r[0]/4])))
+}
+
+func ConverterY() {
+	for {
+		y := <-Y
+		data := <-Data
+		CRGBToY444(data, y)
+		RY <- true
+	}
+}
+
+func ConverterCb() {
+	for {
+		cb := <-Cb
+		data := <-Data
+		CRGBToCb444(data, cb)
+		RCb <- true
+	}
+}
+
+func ConverterCr() {
+	for {
+		cr := <-Cr
+		data := <-Data
+		CRGBToCr444(data, cr)
+		RCr <- true
+	}
+}
+
+func ConverterYCbCr() {
+	for {
+		r := <-Range
+		y := <-Y
+		cb := <-Cb
+		cr := <-Cr
+		data := <-Data
+		CRGBToYCbCr444Range(data, y, cb, cr, r)
+		R <- true
+	}
 }
 
 func ImageToRGBALinux(data []byte) {

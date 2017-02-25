@@ -61,10 +61,10 @@ func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor 
 	return img
 }
 
-func CaptureScreenYCbCrMust(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool) *image.YCbCr {
-	img, err := CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen)
+func CaptureScreenYCbCrMust(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool, numOfRange int64) *image.YCbCr {
+	img, err := CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen, numOfRange)
 	for err != nil {
-		img, err = CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen)
+		img, err = CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen, numOfRange)
 		time.Sleep(10 * time.Millisecond)
 	}
 	return img
@@ -78,15 +78,15 @@ func CaptureScreen() (*image.RGBA, error) {
 	return CaptureRect(r)
 }
 
-func CaptureScreenYCbCr444(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool) (*image.YCbCr, error) {
+func CaptureScreenYCbCr444(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool, numOfRange int64) (*image.YCbCr, error) {
 	if fullScreen {
 		r, e := ScreenRect() // 20us
 		if e != nil {
 			return nil, e
 		}
-		return CaptureRectYCbCr444(r)
+		return CaptureRectYCbCr444(r, numOfRange)
 	} else {
-		return CaptureWindowYCbCr(pos, size, resize, toSBS, cursor)
+		return CaptureWindowYCbCr(pos, size, resize, toSBS, cursor, numOfRange)
 	}
 }
 
@@ -109,7 +109,7 @@ func CaptureRect(rect image.Rectangle) (*image.RGBA, error) {
 	return img, nil
 }
 
-func CaptureRectYCbCr444(rect image.Rectangle) (*image.YCbCr, error) {
+func CaptureRectYCbCr444(rect image.Rectangle, numOfRange int64) (*image.YCbCr, error) {
 	c := Conn
 
 	t := time.Now()
@@ -128,7 +128,36 @@ func CaptureRectYCbCr444(rect image.Rectangle) (*image.YCbCr, error) {
 	}
 	ttt := time.Now()
 
-	CRGBToYCbCr444Linux(data, ImageCache.Y, ImageCache.Cb, ImageCache.Cr)
+	// CRGBToYCbCr444(data, ImageCache.Y, ImageCache.Cb, ImageCache.Cr)
+
+	// Data <- data
+	// Data <- data
+	// Data <- data
+	// Y <- ImageCache.Y
+	// Cb <- ImageCache.Cb
+	// Cr <- ImageCache.Cr
+	// <-RY
+	// <-RCb
+	// <-RCr
+
+	lenData := int64(len(data))
+	size := lenData / (4 * numOfRange) * 4
+	for i := int64(0); i < numOfRange-1; i++ {
+		Range <- []int64{i * size, size}
+		Data <- data
+		Y <- ImageCache.Y
+		Cb <- ImageCache.Cb
+		Cr <- ImageCache.Cr
+	}
+	start := (numOfRange - 1) * size
+	Range <- []int64{start, lenData - start}
+	Data <- data
+	Y <- ImageCache.Y
+	Cb <- ImageCache.Cb
+	Cr <- ImageCache.Cr
+	for i := int64(0); i < numOfRange; i++ {
+		<-R
+	}
 	tttt := time.Now()
 	log.Println(fmt.Sprintf("Shot: %v, Create: %v, Convert: %v", tt.Sub(t), ttt.Sub(tt), tttt.Sub(ttt)))
 	// Shot: 14.734765ms, Create: 108ns, Convert: 9.515677ms
@@ -136,7 +165,7 @@ func CaptureRectYCbCr444(rect image.Rectangle) (*image.YCbCr, error) {
 	return ImageCache, nil
 }
 
-func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool) (*image.YCbCr, error) {
+func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool, numOfRange int64) (*image.YCbCr, error) {
 	c := Conn
 	screen := xproto.Setup(c).DefaultScreen(c)
 

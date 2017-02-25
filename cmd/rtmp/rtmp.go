@@ -48,6 +48,7 @@ var ResizeHeight int
 var Mode string
 var Buffer_Queue_Size int
 var Alpha int
+var Convert int
 var Done bool = false
 var ToSBS bool = false
 var Cursor bool = false
@@ -118,7 +119,8 @@ func CaptureScreenMustAvc(dts uint32) *flv.AVCVideoFrame {
 		&screenshot.RESIZE{ResizeWidth, ResizeHeight},
 		ToSBS,
 		Cursor,
-		FullScreen)
+		FullScreen,
+		int64(Convert))
 	var err error
 	if img.Rect.Dx() != Encoder.W || img.Rect.Dy() != Encoder.H {
 		Encoder, err = codec.NewH264Encoder(img.Rect.Dx(), img.Rect.Dy(), 0, Fps, 1, Fps, BitRate, image.YCbCrSubsampleRatio444, "bufsize,0k,0", "pixel_format,yuv444p,0")
@@ -316,6 +318,13 @@ func init() {
 
 	rtmp.InitCap(Fps, Alpha)
 
+	convert_tmp, err := Config.GetInt("convert")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Get Config['convert'] error: %s\n", err))
+		os.Exit(1)
+	}
+	Convert = int(convert_tmp)
+
 	mode_tmp, err := Config.Get("mode")
 	if err != nil {
 		fmt.Printf(fmt.Sprintf("Get Config['mode'] error: %s\n", err))
@@ -344,7 +353,8 @@ func worker() {
 		&screenshot.RESIZE{ResizeWidth, ResizeHeight},
 		ToSBS,
 		Cursor,
-		FullScreen)
+		FullScreen,
+		int64(Convert))
 	var err error
 	Encoder, err = codec.NewH264Encoder(img.Rect.Dx(), img.Rect.Dy(), 0, Fps, 1, Fps, BitRate, image.YCbCrSubsampleRatio444, "bufsize,0k,0", "pixel_format,yuv444p,0")
 	if err != nil {
@@ -398,6 +408,13 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	screenshot.InitConn()
+	screenshot.InitChannels(Convert)
+	// go screenshot.ConverterY()
+	// go screenshot.ConverterCb()
+	// go screenshot.ConverterCr()
+	for i := 0; i < Convert; i++ {
+		go screenshot.ConverterYCbCr()
+	}
 
 	var swg sync.WaitGroup
 
