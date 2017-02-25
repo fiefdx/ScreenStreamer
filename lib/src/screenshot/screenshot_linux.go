@@ -61,10 +61,10 @@ func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor 
 	return img
 }
 
-func CaptureScreenYCbCrMust(toSBS bool, cursor bool) *image.YCbCr {
-	img, err := CaptureScreenYCbCr444()
+func CaptureScreenYCbCrMust(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool) *image.YCbCr {
+	img, err := CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen)
 	for err != nil {
-		img, err = CaptureScreenYCbCr444()
+		img, err = CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen)
 		time.Sleep(10 * time.Millisecond)
 	}
 	return img
@@ -78,12 +78,16 @@ func CaptureScreen() (*image.RGBA, error) {
 	return CaptureRect(r)
 }
 
-func CaptureScreenYCbCr444() (*image.YCbCr, error) {
-	r, e := ScreenRect() // 20us
-	if e != nil {
-		return nil, e
+func CaptureScreenYCbCr444(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool) (*image.YCbCr, error) {
+	if fullScreen {
+		r, e := ScreenRect() // 20us
+		if e != nil {
+			return nil, e
+		}
+		return CaptureRectYCbCr444(r)
+	} else {
+		return CaptureWindowYCbCr(pos, size, resize, toSBS, cursor)
 	}
-	return CaptureRectYCbCr444(r)
 }
 
 func CaptureRect(rect image.Rectangle) (*image.RGBA, error) {
@@ -127,6 +131,51 @@ func CaptureRectYCbCr444(rect image.Rectangle) (*image.YCbCr, error) {
 	CRGBToYCbCr444Linux(data, ImageCache.Y, ImageCache.Cb, ImageCache.Cr)
 	tttt := time.Now()
 	log.Println(fmt.Sprintf("Shot: %v, Create: %v, Convert: %v", tt.Sub(t), ttt.Sub(tt), tttt.Sub(ttt)))
+	// Shot: 14.734765ms, Create: 108ns, Convert: 9.515677ms
+
+	return ImageCache, nil
+}
+
+func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool) (*image.YCbCr, error) {
+	c := Conn
+	screen := xproto.Setup(c).DefaultScreen(c)
+
+	aname := "_NET_ACTIVE_WINDOW"
+	activeAtom, err := xproto.InternAtom(c, true, uint16(len(aname)), aname).Reply()
+	if err != nil {
+		return nil, fmt.Errorf("error occurred, when xproto.InternAtom 0 err:%v.\n", err)
+	}
+
+	reply, err := xproto.GetProperty(c, false, screen.Root, activeAtom.Atom, xproto.GetPropertyTypeAny, 0, (1<<32)-1).Reply()
+	if err != nil {
+		return nil, fmt.Errorf("error occurred, when xproto.GetProperty 0 err:%v.\n", err)
+	}
+	windowId := xproto.Window(xgb.Get32(reply.Value))
+
+	ginfo, err := xproto.GetGeometry(c, xproto.Drawable(windowId)).Reply()
+	if err != nil {
+		return nil, err
+	}
+
+	width := int(ginfo.Width) - pos.X
+	height := int(ginfo.Height) - pos.Y
+	if size.W != 0 && size.H != 0 {
+		width = size.W
+		height = size.H
+	}
+
+	xImg, err := xproto.GetImage(c, xproto.ImageFormatZPixmap, xproto.Drawable(windowId), int16(pos.X), int16(pos.Y), uint16(width), uint16(height), 0xffffffff).Reply()
+	if err != nil {
+		return nil, err
+	}
+
+	data := xImg.Data
+
+	if ImageCache == nil || (ImageCache.Rect.Dx() != (width-pos.X) || ImageCache.Rect.Dy() != (height-pos.Y)) {
+		ImageCache = image.NewYCbCr(image.Rect(pos.X, pos.Y, width, height), image.YCbCrSubsampleRatio444)
+	}
+
+	CRGBToYCbCr444Linux(data, ImageCache.Y, ImageCache.Cb, ImageCache.Cr)
 	// Shot: 14.734765ms, Create: 108ns, Convert: 9.515677ms
 
 	return ImageCache, nil

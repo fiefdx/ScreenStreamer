@@ -165,7 +165,7 @@ func new_streamObject(sid string, timeout time.Duration, record bool, csize int)
 		list:   []int{},
 		cache:  make(map[int]*MediaGop, csize),
 		subs:   []NetStream{},
-		notify: make(chan *int, csize), // *100
+		notify: make(chan *int, 0), // csize), *100
 		csize:  csize,
 	}
 	addObject(obj)

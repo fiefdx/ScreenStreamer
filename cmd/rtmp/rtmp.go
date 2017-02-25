@@ -39,14 +39,22 @@ var ServerPort string
 var Threads int
 var Fps int
 var BitRate int
+var Left int
+var Top int
+var Width int
+var Height int
+var ResizeWidth int
+var ResizeHeight int
 var Mode string
 var Buffer_Queue_Size int
 var Alpha int
 var Done bool = false
 var ToSBS bool = false
 var Cursor bool = false
+var FullScreen bool = true
+var Encoder *codec.H264Encoder
 
-func GetFirstAvc(c *codec.H264Encoder, width, height uint16) *flv.AVCVideoFrame {
+func GetFirstAvc(width, height uint16) *flv.AVCVideoFrame {
 	avc := new(flv.AVCVideoFrame)
 	avc.VideoFrame = new(flv.VideoFrame)
 	avc.VideoFrame.CFrame = new(flv.CFrame)
@@ -64,10 +72,10 @@ func GetFirstAvc(c *codec.H264Encoder, width, height uint16) *flv.AVCVideoFrame 
 
 	SPS := make([]byte, 0)
 	PPS := make([]byte, 0)
-	headerS := fmt.Sprintf("%X", c.Header)
+	headerS := fmt.Sprintf("%X", Encoder.Header)
 	i := strings.Index(headerS, "0000000167")
 	if i != -1 {
-		spsTmp := c.Header[i/2+4:]
+		spsTmp := Encoder.Header[i/2+4:]
 		spsTmpS := fmt.Sprintf("%X", spsTmp)
 		j := strings.Index(spsTmpS, "0000000168")
 		if j != -1 {
@@ -100,19 +108,34 @@ func GetFirstAvc(c *codec.H264Encoder, width, height uint16) *flv.AVCVideoFrame 
 	return avc
 }
 
-func CaptureScreenMustAvc(c *codec.H264Encoder, dts uint32) *flv.AVCVideoFrame {
+func CaptureScreenMustAvc(dts uint32) *flv.AVCVideoFrame {
 	t := time.Now()
 	avc := new(flv.AVCVideoFrame)
 	avc.VideoFrame = new(flv.VideoFrame)
 	avc.VideoFrame.CFrame = new(flv.CFrame)
-	img := screenshot.CaptureScreenYCbCrMust(false, false)
+	img := screenshot.CaptureScreenYCbCrMust(&screenshot.POS{Left, Top},
+		&screenshot.SIZE{Width, Height},
+		&screenshot.RESIZE{ResizeWidth, ResizeHeight},
+		ToSBS,
+		Cursor,
+		FullScreen)
+	var err error
+	if img.Rect.Dx() != Encoder.W || img.Rect.Dy() != Encoder.H {
+		Encoder, err = codec.NewH264Encoder(img.Rect.Dx(), img.Rect.Dy(), 0, Fps, 1, Fps, BitRate, image.YCbCrSubsampleRatio444, "bufsize,0k,0", "pixel_format,yuv444p,0")
+		if err != nil {
+			panic(err)
+		}
+		avc := GetFirstAvc(uint16(img.Rect.Dx()), uint16(img.Rect.Dy()))
+		return avc
+	}
+
 	tt := time.Now()
-	data, err := c.Encode(img)
+	data, err := Encoder.Encode(img)
 	if err != nil {
-		data, err = c.Encode(img)
+		data, err = Encoder.Encode(img)
 	}
 	for len(data.Data) == 0 {
-		data, err = c.Encode(img)
+		data, err = Encoder.Encode(img)
 	}
 	ttt := time.Now()
 	avc.Stream = 0
@@ -221,6 +244,55 @@ func init() {
 
 	rtmp.InitBuf(Buffer_Queue_Size)
 
+	full_screen_tmp, err := Config.GetBool("full_screen")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Get Config['full_screen'] error: %s\n", err))
+		os.Exit(1)
+	}
+	FullScreen = full_screen_tmp
+
+	left_tmp, err := Config.GetInt("left")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Get Config['left'] error: %s\n", err))
+		os.Exit(1)
+	}
+	Left = int(left_tmp)
+
+	top_tmp, err := Config.GetInt("top")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Get Config['top'] error: %s\n", err))
+		os.Exit(1)
+	}
+	Top = int(top_tmp)
+
+	width_tmp, err := Config.GetInt("width")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Get Config['width'] error: %s\n", err))
+		os.Exit(1)
+	}
+	Width = int(width_tmp)
+
+	height_tmp, err := Config.GetInt("height")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Get Config['height'] error: %s\n", err))
+		os.Exit(1)
+	}
+	Height = int(height_tmp)
+
+	resize_width_tmp, err := Config.GetInt("resize_width")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Get Config['resize_width'] error: %s\n", err))
+		os.Exit(1)
+	}
+	ResizeWidth = int(resize_width_tmp)
+
+	resize_height_tmp, err := Config.GetInt("resize_height")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Get Config['resize_height'] error: %s\n", err))
+		os.Exit(1)
+	}
+	ResizeHeight = int(resize_height_tmp)
+
 	to_sbs_tmp, err := Config.GetBool("to_sbs")
 	if err != nil {
 		fmt.Printf(fmt.Sprintf("Get Config['to_sbs'] error: %s\n", err))
@@ -266,12 +338,24 @@ func init() {
 	Log.Info(fmt.Sprintf("Server port: %s", ServerPort))
 }
 
-func worker(c *codec.H264Encoder, img *image.YCbCr) {
+func worker() {
+	img := screenshot.CaptureScreenYCbCrMust(&screenshot.POS{Left, Top},
+		&screenshot.SIZE{Width, Height},
+		&screenshot.RESIZE{ResizeWidth, ResizeHeight},
+		ToSBS,
+		Cursor,
+		FullScreen)
+	var err error
+	Encoder, err = codec.NewH264Encoder(img.Rect.Dx(), img.Rect.Dy(), 0, Fps, 1, Fps, BitRate, image.YCbCrSubsampleRatio444, "bufsize,0k,0", "pixel_format,yuv444p,0")
+	if err != nil {
+		panic(err)
+	}
+
 	std_interval := float64(1.0 / float64(Fps))
 	time_to_sleep := std_interval
 	s := time.Now()
 	dts := uint32(0)
-	avc := GetFirstAvc(c, uint16(img.Rect.Dx()), uint16(img.Rect.Dy()))
+	avc := GetFirstAvc(uint16(img.Rect.Dx()), uint16(img.Rect.Dy()))
 	rtmp.Buffer <- avc
 	for {
 		if Done {
@@ -281,7 +365,12 @@ func worker(c *codec.H264Encoder, img *image.YCbCr) {
 			dts = uint32(0)
 		}
 		t := time.Now()
-		avc := CaptureScreenMustAvc(c, dts)
+		avc := CaptureScreenMustAvc(dts)
+		if avc.PacketType == flv.VIDEO_AVC_SEQUENCE_HEADER {
+			dts = uint32(0)
+			rtmp.Buffer <- avc
+			continue
+		}
 		tt := time.Now()
 		log.Println(fmt.Sprintf("CaptureScreenMustAvc use: %v", tt.Sub(t)))
 		rtmp.Buffer <- avc
@@ -309,16 +398,11 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	screenshot.InitConn()
-	img := screenshot.CaptureScreenYCbCrMust(false, false)
-	c, err := codec.NewH264Encoder(img.Rect.Dx(), img.Rect.Dy(), 0, Fps, 1, Fps, BitRate, image.YCbCrSubsampleRatio444, "bufsize,0k,0", "pixel_format,yuv444p,0")
-	if err != nil {
-		panic(err)
-	}
 
 	var swg sync.WaitGroup
 
 	flag.Parse()
-	err = rtmp.ListenAndServe(fmt.Sprintf("%v:%v", ServerHost, ServerPort))
+	err := rtmp.ListenAndServe(fmt.Sprintf("%v:%v", ServerHost, ServerPort))
 	if err != nil {
 		panic(err)
 	}
@@ -328,9 +412,9 @@ func main() {
 	}()
 
 	if Mode == "single" {
-		go worker(c, img)
+		go worker()
 	} else {
-		go worker(c, img)
+		go worker()
 	}
 
 	select {
