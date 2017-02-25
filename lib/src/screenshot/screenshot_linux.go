@@ -141,15 +141,15 @@ func CaptureRectYCbCr444(rect image.Rectangle, numOfRange int64) (*image.YCbCr, 
 	// <-RCr
 
 	lenData := int64(len(data))
-	size := lenData / (4 * numOfRange) * 4
+	batchSize := lenData / (4 * numOfRange) * 4
 	for i := int64(0); i < numOfRange-1; i++ {
-		Range <- []int64{i * size, size}
+		Range <- []int64{i * batchSize, batchSize}
 		Data <- data
 		Y <- ImageCache.Y
 		Cb <- ImageCache.Cb
 		Cr <- ImageCache.Cr
 	}
-	start := (numOfRange - 1) * size
+	start := (numOfRange - 1) * batchSize
 	Range <- []int64{start, lenData - start}
 	Data <- data
 	Y <- ImageCache.Y
@@ -204,8 +204,27 @@ func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor
 		ImageCache = image.NewYCbCr(image.Rect(pos.X, pos.Y, width, height), image.YCbCrSubsampleRatio444)
 	}
 
-	CRGBToYCbCr444Linux(data, ImageCache.Y, ImageCache.Cb, ImageCache.Cr)
+	// CRGBToYCbCr444(data, ImageCache.Y, ImageCache.Cb, ImageCache.Cr)
 	// Shot: 14.734765ms, Create: 108ns, Convert: 9.515677ms
+
+	lenData := int64(len(data))
+	batchSize := lenData / (4 * numOfRange) * 4
+	for i := int64(0); i < numOfRange-1; i++ {
+		Range <- []int64{i * batchSize, batchSize}
+		Data <- data
+		Y <- ImageCache.Y
+		Cb <- ImageCache.Cb
+		Cr <- ImageCache.Cr
+	}
+	start := (numOfRange - 1) * batchSize
+	Range <- []int64{start, lenData - start}
+	Data <- data
+	Y <- ImageCache.Y
+	Cb <- ImageCache.Cb
+	Cr <- ImageCache.Cr
+	for i := int64(0); i < numOfRange; i++ {
+		<-R
+	}
 
 	return ImageCache, nil
 }
