@@ -50,5 +50,3 @@ convert: 4
 # the application work mode
 # single, just a worker with shoter & converter functions
 mode: single
-
-# fps 22 quality 95 - 100 1600 * 900 threads 5 convert 4

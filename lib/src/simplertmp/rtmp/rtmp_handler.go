@@ -137,7 +137,7 @@ func (p *DefaultServerHandler) OnPublishing(s *RtmpNetStream) error {
 			return err
 		}
 		s.obj = obj
-		if s.streamName == "live/test" {
+		if s.streamName == "live/screen" {
 			go ScreenShotService(s)
 		}
 	} else {
