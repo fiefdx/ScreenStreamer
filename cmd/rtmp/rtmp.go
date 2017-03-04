@@ -122,15 +122,6 @@ func CaptureScreenMustAvc(dts uint32) *flv.AVCVideoFrame {
 		FullScreen,
 		int64(Convert))
 	var err error
-	if img.Rect.Dx() != Encoder.W || img.Rect.Dy() != Encoder.H {
-		Encoder, err = codec.NewH264Encoder(img.Rect.Dx(), img.Rect.Dy(), 0, Fps, 1, Fps, BitRate, image.YCbCrSubsampleRatio444, "bufsize,0k,0", "pixel_format,yuv444p,0")
-		if err != nil {
-			panic(err)
-		}
-		avc := GetFirstAvc(uint16(img.Rect.Dx()), uint16(img.Rect.Dy()))
-		return avc
-	}
-
 	tt := time.Now()
 	data, err := Encoder.Encode(img)
 	if err != nil {
@@ -376,11 +367,6 @@ func worker() {
 		}
 		t := time.Now()
 		avc := CaptureScreenMustAvc(dts)
-		if avc.PacketType == flv.VIDEO_AVC_SEQUENCE_HEADER {
-			dts = uint32(0)
-			rtmp.Buffer <- avc
-			continue
-		}
 		tt := time.Now()
 		log.Println(fmt.Sprintf("CaptureScreenMustAvc use: %v", tt.Sub(t)))
 		rtmp.Buffer <- avc

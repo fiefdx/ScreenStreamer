@@ -467,7 +467,7 @@ func (s *RtmpNetStream) readLoop() {
 				}
 				s.streamName = s.path
 
-				if s.streamName == "live/test" {
+				if s.streamName == "live/screen" {
 					if err := s.notifyPublishing(); err != nil {
 						s.notifyError(err)
 						return
