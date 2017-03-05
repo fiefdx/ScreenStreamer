@@ -33,6 +33,14 @@ func InitConn() {
 func CloseConn() {
 }
 
+func GetActiveWindow() int64 {
+	hWND := w32.GetForegroundWindow()
+	if hWND == 0 {
+		return int64(-1)
+	}
+	return int64(hWND)
+}
+
 func ScreenRect() (image.Rectangle, error) {
 	hDC := w32.GetDC(0)
 	if hDC == 0 {
@@ -53,10 +61,10 @@ func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor 
 	return img
 }
 
-func CaptureScreenYCbCrMust(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool, numOfRange int64) *image.YCbCr {
-	img, err := CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen, numOfRange)
+func CaptureScreenYCbCrMust(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool, numOfRange, windowId int64) *image.YCbCr {
+	img, err := CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen, numOfRange, windowId)
 	for err != nil {
-		img, err = CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen, numOfRange)
+		img, err = CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen, numOfRange, windowId)
 		time.Sleep(10 * time.Millisecond)
 	}
 	return img
@@ -70,7 +78,7 @@ func CaptureScreen() (*image.RGBA, error) {
 	return CaptureRect(r)
 }
 
-func CaptureScreenYCbCr444(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool, numOfRange int64) (*image.YCbCr, error) {
+func CaptureScreenYCbCr444(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool, numOfRange, windowId int64) (*image.YCbCr, error) {
 	if fullScreen {
 		r, e := ScreenRect() // 20us
 		if e != nil {
@@ -78,7 +86,7 @@ func CaptureScreenYCbCr444(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, 
 		}
 		return CaptureRectYCbCr444(r, numOfRange)
 	} else {
-		return CaptureWindowYCbCr(pos, size, resize, toSBS, cursor, numOfRange)
+		return CaptureWindowYCbCr(pos, size, resize, toSBS, cursor, numOfRange, windowId)
 	}
 }
 
@@ -309,8 +317,14 @@ func CaptureWindowImage(capture *CAPTURE) *image.RGBA {
 	return img
 }
 
-func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool, numOfRange int64) (*image.YCbCr, error) {
-	hWND := w32.GetForegroundWindow()
+func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool, numOfRange, windowId int64) (*image.YCbCr, error) {
+	var hWND w32.HWND
+	if windowId != -1 {
+		hWND = w32.HWND(windowId)
+	} else {
+		hWND = w32.GetForegroundWindow()
+	}
+
 	hDC := w32.GetDC(hWND)
 	if hDC == 0 || hWND == 0 {
 		return nil, fmt.Errorf("Could not Get primary display err:%d.\n", w32.GetLastError())

@@ -42,6 +42,24 @@ func CloseConn() {
 	Conn.Close()
 }
 
+func GetActiveWindow() int64 {
+	c := Conn
+
+	screen := xproto.Setup(c).DefaultScreen(c)
+
+	aname := "_NET_ACTIVE_WINDOW"
+	activeAtom, err := xproto.InternAtom(c, true, uint16(len(aname)), aname).Reply()
+	if err != nil {
+		return int64(-1)
+	}
+	reply, err := xproto.GetProperty(c, false, screen.Root, activeAtom.Atom, xproto.GetPropertyTypeAny, 0, (1<<32)-1).Reply()
+	if err != nil {
+		return int64(-1)
+	}
+	windowId := xproto.Window(xgb.Get32(reply.Value))
+	return int64(windowId)
+}
+
 func ScreenRect() (image.Rectangle, error) {
 	c := Conn
 
@@ -61,10 +79,10 @@ func CaptureWindowMust(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor 
 	return img
 }
 
-func CaptureScreenYCbCrMust(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool, numOfRange int64) *image.YCbCr {
-	img, err := CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen, numOfRange)
+func CaptureScreenYCbCrMust(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool, numOfRange, windowId int64) *image.YCbCr {
+	img, err := CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen, numOfRange, windowId)
 	for err != nil {
-		img, err = CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen, numOfRange)
+		img, err = CaptureScreenYCbCr444(pos, size, resize, toSBS, cursor, fullScreen, numOfRange, windowId)
 		time.Sleep(10 * time.Millisecond)
 	}
 	return img
@@ -78,7 +96,7 @@ func CaptureScreen() (*image.RGBA, error) {
 	return CaptureRect(r)
 }
 
-func CaptureScreenYCbCr444(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool, numOfRange int64) (*image.YCbCr, error) {
+func CaptureScreenYCbCr444(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, fullScreen bool, numOfRange, windowId int64) (*image.YCbCr, error) {
 	if fullScreen {
 		r, e := ScreenRect() // 20us
 		if e != nil {
@@ -86,7 +104,7 @@ func CaptureScreenYCbCr444(pos *POS, size *SIZE, resize *RESIZE, toSBS, cursor, 
 		}
 		return CaptureRectYCbCr444(r, numOfRange)
 	} else {
-		return CaptureWindowYCbCr(pos, size, resize, toSBS, cursor, numOfRange)
+		return CaptureWindowYCbCr(pos, size, resize, toSBS, cursor, numOfRange, windowId)
 	}
 }
 
@@ -165,7 +183,7 @@ func CaptureRectYCbCr444(rect image.Rectangle, numOfRange int64) (*image.YCbCr, 
 	return ImageCache, nil
 }
 
-func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool, numOfRange int64) (*image.YCbCr, error) {
+func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool, numOfRange, windowId int64) (*image.YCbCr, error) {
 	c := Conn
 	screen := xproto.Setup(c).DefaultScreen(c)
 
@@ -179,9 +197,15 @@ func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor
 	if err != nil {
 		return nil, fmt.Errorf("error occurred, when xproto.GetProperty 0 err:%v.\n", err)
 	}
-	windowId := xproto.Window(xgb.Get32(reply.Value))
 
-	ginfo, err := xproto.GetGeometry(c, xproto.Drawable(windowId)).Reply()
+	var winId xproto.Window
+	if windowId != -1 {
+		winId = xproto.Window(windowId)
+	} else {
+		winId = xproto.Window(xgb.Get32(reply.Value))
+	}
+
+	ginfo, err := xproto.GetGeometry(c, xproto.Drawable(winId)).Reply()
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +217,7 @@ func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor
 		height = size.H
 	}
 
-	xImg, err := xproto.GetImage(c, xproto.ImageFormatZPixmap, xproto.Drawable(windowId), int16(pos.X), int16(pos.Y), uint16(width), uint16(height), 0xffffffff).Reply()
+	xImg, err := xproto.GetImage(c, xproto.ImageFormatZPixmap, xproto.Drawable(winId), int16(pos.X), int16(pos.Y), uint16(width), uint16(height), 0xffffffff).Reply()
 	if err != nil {
 		return nil, err
 	}

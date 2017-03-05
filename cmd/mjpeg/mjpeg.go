@@ -5,6 +5,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"go-gypsy/yaml"
 	"image"
@@ -57,6 +58,8 @@ var ToSBS bool = false
 var Broadcast bool = false
 var Cursor bool = false
 
+var configPath string
+
 func CaptureWindowMust(pos *screenshot.POS, size *screenshot.SIZE, resize *screenshot.RESIZE, toSBS bool, cursor bool) *image.RGBA {
 	img, err := screenshot.CaptureWindow(pos, size, resize, toSBS, cursor)
 	errN := 0
@@ -71,9 +74,7 @@ func CaptureWindowMust(pos *screenshot.POS, size *screenshot.SIZE, resize *scree
 	return img
 }
 
-func init() {
-	configPath := "./configuration.mjpeg.yml"
-
+func Init() {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		fmt.Printf("Init Config (%s) error: (%s) does not exist!\n", configPath)
 		os.Exit(1)
@@ -284,6 +285,11 @@ func init() {
 }
 
 func main() {
+	flag.StringVar(&configPath, "config", "./configuration.mjpeg.yml", "-config=./configuration.mjpeg.yml")
+
+	flag.Parse()
+	Init()
+
 	sigs := make(chan os.Signal, 1)
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)

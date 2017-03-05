@@ -2,6 +2,8 @@
 *.log.*
 stream
 rtmp
+mjpeg
+get_active_window
 test/*.jpeg
 test/*.jpg
 *.h264
