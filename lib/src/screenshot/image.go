@@ -112,6 +112,43 @@ static void ImageRGBToYCbCr4442(unsigned char *data, int32_t length, unsigned ch
 	}
 }
 
+static void ImageRGBToYCbCr4443(unsigned char *data, int32_t length, int32_t width, int32_t image_width, unsigned char *y, unsigned char *cb, unsigned char *cr) {
+	int32_t n = 0;
+	int32_t w = 0;
+	int32_t f = 0;
+	int32_t jwidth = 0;
+	if (width == image_width) {
+		for (int32_t i = 0; i < length; i += 4) {
+			RGBToYCbCr5(data[i+2], data[i+1], data[i], &y[n], &cb[n], &cr[n]);
+			n += 1;
+		}
+	} else {
+		for (int32_t i = 0; i < length; i += 4) {
+			if (w == width) {
+				f = n - width - 1;
+				for (int32_t j = n; j > f; j--) {
+					jwidth = j + width;
+					y[jwidth] = y[j];
+					cb[jwidth] = cb[j];
+					cr[jwidth] = cr[j];
+				}
+				n += width;
+				w = 0;
+			}
+			RGBToYCbCr5(data[i+2], data[i+1], data[i], &y[n], &cb[n], &cr[n]);
+			n += 1;
+			w += 1;
+		}
+		f = n - width - 1;
+		for (int32_t j = n; j > f; j--) {
+			jwidth = j + width;
+			y[jwidth] = y[j];
+			cb[jwidth] = cb[j];
+			cr[jwidth] = cr[j];
+		}
+	}
+}
+
 static void ImageRGBToY444(unsigned char *data, int32_t length, unsigned char *y) {
 	int32_t n = 0;
 	for (int32_t i = 0; i < length; i += 4) {
@@ -217,11 +254,24 @@ func CRGBToCr444(data, cr []byte) {
 }
 
 func CRGBToYCbCr444Range(data, y, cb, cr []byte, r []int64) {
-	C.ImageRGBToYCbCr4442((*C.uchar)(unsafe.Pointer(&data[r[0]])),
-		C.int32_t(r[1]),
-		(*C.uchar)(unsafe.Pointer(&y[r[0]/4])),
-		(*C.uchar)(unsafe.Pointer(&cb[r[0]/4])),
-		(*C.uchar)(unsafe.Pointer(&cr[r[0]/4])))
+	if r[2] == r[3] {
+		C.ImageRGBToYCbCr4443((*C.uchar)(unsafe.Pointer(&data[r[0]])),
+			C.int32_t(r[1]),
+			C.int32_t(r[2]),
+			C.int32_t(r[3]),
+			(*C.uchar)(unsafe.Pointer(&y[r[0]/4])),
+			(*C.uchar)(unsafe.Pointer(&cb[r[0]/4])),
+			(*C.uchar)(unsafe.Pointer(&cr[r[0]/4])))
+	} else {
+		C.ImageRGBToYCbCr4443((*C.uchar)(unsafe.Pointer(&data[r[0]])),
+			C.int32_t(r[1]),
+			C.int32_t(r[2]),
+			C.int32_t(r[3]),
+			(*C.uchar)(unsafe.Pointer(&y[r[0]/2])),
+			(*C.uchar)(unsafe.Pointer(&cb[r[0]/2])),
+			(*C.uchar)(unsafe.Pointer(&cr[r[0]/2])))
+	}
+
 }
 
 func ConverterY() {

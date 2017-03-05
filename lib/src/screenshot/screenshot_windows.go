@@ -394,24 +394,30 @@ func CaptureWindowYCbCr(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor
 	hdrp.Len = width * height * 4
 	hdrp.Cap = width * height * 4
 
-	if ImageCache == nil || (ImageCache.Rect.Dx() != width || ImageCache.Rect.Dy() != height) {
-		ImageCache = image.NewYCbCr(image.Rect(0, 0, width, height), image.YCbCrSubsampleRatio444)
+	if !toSBS {
+		if ImageCache == nil || (ImageCache.Rect.Dx() != width || ImageCache.Rect.Dy() != height) {
+			ImageCache = image.NewYCbCr(image.Rect(0, 0, width, height), image.YCbCrSubsampleRatio444)
+		}
+	} else {
+		if ImageCache == nil || (ImageCache.Rect.Dx() != width || ImageCache.Rect.Dy() != height) {
+			ImageCache = image.NewYCbCr(image.Rect(0, 0, 2*width, height), image.YCbCrSubsampleRatio444)
+		}
 	}
 
 	// CRGBToYCbCr444(slice, ImageCache.Y, ImageCache.Cb, ImageCache.Cr)
 	// Shot: 15.510277ms, Create: 2.024195ms, Convert: 25.398941ms
 
 	lenData := int64(len(slice))
-	batchSize := lenData / (4 * numOfRange) * 4
+	batchSize := (int64(height) / numOfRange) * int64(width) * 4
 	for i := int64(0); i < numOfRange-1; i++ {
-		Range <- []int64{i * batchSize, batchSize}
+		Range <- []int64{i * batchSize, batchSize, int64(width), int64(ImageCache.Rect.Dx())}
 		Data <- slice
 		Y <- ImageCache.Y
 		Cb <- ImageCache.Cb
 		Cr <- ImageCache.Cr
 	}
 	start := (numOfRange - 1) * batchSize
-	Range <- []int64{start, lenData - start}
+	Range <- []int64{start, lenData - start, int64(width), int64(ImageCache.Rect.Dx())}
 	Data <- slice
 	Y <- ImageCache.Y
 	Cb <- ImageCache.Cb
