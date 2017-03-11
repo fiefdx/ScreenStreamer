@@ -7,7 +7,8 @@ you will like this application.
 
 For using ScreenStreamer easily, you can use [ScreenStreamerManager](https://github.com/fiefdx/ScreenStreamerManager).
 
-With rtmp, you should wait a few minutes, to get the video delay down to 500ms.
+With rtmp, you should wait a few minutes, to get the video delay down to 500ms. With Windows this not work, With Windows,
+you can minimize the window temporarily and wait to the phone's screen stopped, then restore the window.
 
 ScreenShots
 -----------
