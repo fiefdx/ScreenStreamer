@@ -38,6 +38,7 @@ var ServerHost string
 var ServerPort string
 var Threads int
 var Fps int
+var WriteFramesTimeout int64
 var BitRate int
 var Left int
 var Top int
@@ -78,6 +79,7 @@ func GetFirstAvc(width, height uint16) *flv.AVCVideoFrame {
 	avc := new(flv.AVCVideoFrame)
 	avc.VideoFrame = new(flv.VideoFrame)
 	avc.VideoFrame.CFrame = new(flv.CFrame)
+	avc.StartTime = time.Now()
 	avc.Stream = 0
 	avc.Dts = uint32(0)
 	avc.Type = flv.TAG_TYPE_VIDEO
@@ -133,6 +135,7 @@ func CaptureScreenMustAvc(dts uint32) *flv.AVCVideoFrame {
 	avc := new(flv.AVCVideoFrame)
 	avc.VideoFrame = new(flv.VideoFrame)
 	avc.VideoFrame.CFrame = new(flv.CFrame)
+	avc.StartTime = time.Now()
 	img := screenshot.CaptureScreenYCbCrMust(&screenshot.POS{Left, Top},
 		&screenshot.SIZE{Width, Height},
 		&screenshot.RESIZE{ResizeWidth, ResizeHeight},
@@ -246,6 +249,13 @@ func Init() {
 	}
 	Fps = int(fps_tmp)
 
+	write_frames_timeout_tmp, err := Config.GetInt("write_frames_timeout")
+	if err != nil {
+		fmt.Printf(fmt.Sprintf("Get Config['write_frames_timeout'] error: %s\n", err))
+		os.Exit(1)
+	}
+	WriteFramesTimeout = write_frames_timeout_tmp
+
 	bit_rate_tmp, err := Config.GetInt("bit_rate")
 	if err != nil {
 		fmt.Printf(fmt.Sprintf("Get Config['bit_rate'] error: %s\n", err))
@@ -253,7 +263,7 @@ func Init() {
 	}
 	BitRate = int(bit_rate_tmp)
 
-	rtmp.InitBuf(Buffer_Queue_Size)
+	rtmp.InitBuf(Buffer_Queue_Size, WriteFramesTimeout)
 
 	full_screen_tmp, err := Config.GetBool("full_screen")
 	if err != nil {

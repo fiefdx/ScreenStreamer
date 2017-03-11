@@ -15,6 +15,9 @@ threads: 5
 # target fps
 fps: 30
 
+# write_frames_timeout, write frames deadline duration, default is 500ms
+write_frames_timeout: 500
+
 # bit_rate, default is 64M
 bit_rate: 64
 

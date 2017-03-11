@@ -734,7 +734,7 @@ func sendFullVideo(conn *RtmpNetConnection, video *MediaFrame) (err error) {
 		}
 	}
 	conn.writesequencenum += uint32(buf.Len())
-	conn.conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+	conn.conn.SetWriteDeadline(time.Now().Add(time.Duration(WriteFramesTimeout) * time.Millisecond))
 	_, err = buf.WriteTo(conn.conn)
 	buf.Reset()
 	return

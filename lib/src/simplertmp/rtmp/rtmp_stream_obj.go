@@ -36,6 +36,7 @@ type MediaFrame struct {
 	StreamId       uint32
 	count          int32
 	p              *MediaFramePool
+	StartTime      time.Time
 }
 
 func (p *MediaFrame) IFrame() bool {

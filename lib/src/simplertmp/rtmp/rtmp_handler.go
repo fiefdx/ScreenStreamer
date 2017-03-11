@@ -9,6 +9,7 @@ import (
 var Buffer chan *flv.AVCVideoFrame
 var FrameBuffer *flv.AVCVideoFrame
 var Fps int
+var WriteFramesTimeout int64
 var Alpha int
 
 func GetFrame() *flv.AVCVideoFrame {
@@ -29,8 +30,9 @@ func GetFrameMust() *flv.AVCVideoFrame {
 	return frame
 }
 
-func InitBuf(b_size int) {
+func InitBuf(b_size int, write_frames_timeout int64) {
 	Buffer = make(chan *flv.AVCVideoFrame, b_size)
+	WriteFramesTimeout = write_frames_timeout
 }
 
 func InitCap(fps, alpha int) {
@@ -98,6 +100,14 @@ func ScreenShotService(s *RtmpNetStream) {
 		}
 
 		frame := <-Buffer
+		// if frame.PacketType != flv.VIDEO_AVC_SEQUENCE_HEADER {
+		// 	timeout := time.Since(frame.StartTime)
+		// 	for timeout.Nanoseconds() > FrameTimeout {
+		// 		log.Warnf("Throw a frame, timeout: %v!", timeout)
+		// 		frame = <-Buffer
+		// 		timeout = time.Since(frame.StartTime)
+		// 	}
+		// }
 
 		if frame.GetType() == flv.TAG_TYPE_VIDEO {
 			payload := make([]byte, 0)
@@ -113,6 +123,7 @@ func ScreenShotService(s *RtmpNetStream) {
 			sp.VideoCodecID = one & 0x0f
 
 			sp.Payload.Write(payload)
+			sp.StartTime = frame.StartTime
 			f, e := s.obj.WriteFrame(sp)
 			for f != true {
 				time.Sleep(time.Millisecond * 5)

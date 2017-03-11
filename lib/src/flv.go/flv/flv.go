@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"stringio"
+	"time"
 )
 
 type Header struct {
@@ -45,6 +46,7 @@ type VideoFrame struct {
 type AVCVideoFrame struct {
 	*VideoFrame
 	PacketType AvcPacketType
+	StartTime  time.Time
 }
 
 type AudioFrame struct {
@@ -243,7 +245,7 @@ func (frWriter *FlvWriter) WriteHeaderToStringIO(header *Header, sio *stringio.S
 }
 
 func (fr *FlvReader) Recover(e Error, scanLength int) (broken Frame, err error, seekLength int) {
-	re, ok := e.(*ReadError);
+	re, ok := e.(*ReadError)
 	if !ok {
 		return nil, fmt.Errorf("unrecoverable read error"), 0
 	}
@@ -272,7 +274,7 @@ func (fr *FlvReader) Recover(e Error, scanLength int) (broken Frame, err error, 
 	validTagStart := []byte{8, 9, 18}
 	seekLength = 0
 	for {
-		for ;(seekLength<scanLength) && (bytes.IndexByte(validTagStart, scanBuf[seekLength]) == -1);seekLength++ {
+		for ; (seekLength < scanLength) && (bytes.IndexByte(validTagStart, scanBuf[seekLength]) == -1); seekLength++ {
 		}
 		if seekLength == scanLength {
 			return nil, fmt.Errorf("no valid frames @[%d-%d]", scanStart, int(scanStart)+seekLength), seekLength
@@ -312,7 +314,7 @@ func (frReader *FlvReader) readFrame() (*CFrame, Error) {
 		return nil, nil
 	}
 	if TagSize(n) != TAG_HEADER_LENGTH {
-		return nil, Unrecoverable( fmt.Sprintf("bad tag length=%d", n), curPos)
+		return nil, Unrecoverable(fmt.Sprintf("bad tag length=%d", n), curPos)
 	}
 	if err != nil {
 		return nil, Unrecoverable(err.Error(), curPos)
@@ -353,12 +355,11 @@ func (frReader *FlvReader) readFrame() (*CFrame, Error) {
 		Body:        bodyBuf,
 		PrevTagSize: prevTagSize,
 	}
-	if prevTagSize != bodyLen + uint32(TAG_HEADER_LENGTH) {
+	if prevTagSize != bodyLen+uint32(TAG_HEADER_LENGTH) {
 		return nil, IncompleteFrameError(pFrame)
 	}
 	return pFrame, nil
 }
-
 
 func (frReader *FlvReader) parseFrame(pFrame *CFrame) (resFrame Frame) {
 	bodyBuf := pFrame.Body
