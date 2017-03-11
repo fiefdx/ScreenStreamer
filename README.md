@@ -5,7 +5,9 @@ over http or as flv over rtmp as soon as possible, it can be a broadcast service
 want, if you want to use tridef-3d but you don't have a professional VR head set, and you have a smart phone, I think
 you will like this application.
 
-For using ScreenStreamer easily, you can use [ScreenStreamerManager](https://github.com/fiefdx/ScreenStreamerManager)
+For using ScreenStreamer easily, you can use [ScreenStreamerManager](https://github.com/fiefdx/ScreenStreamerManager).
+
+With rtmp, you should wait a few minutes, to get the video delay down to 500ms.
 
 ScreenShots
 -----------
