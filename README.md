@@ -5,6 +5,8 @@ over http or as flv over rtmp as soon as possible, it can be a broadcast service
 want, if you want to use tridef-3d but you don't have a professional VR head set, and you have a smart phone, I think
 you will like this application.
 
+For using ScreenStreamer easily, you can use [ScreenStreamerManager](https://github.com/fiefdx/ScreenStreamerManager)
+
 ScreenShots
 -----------
 1. Working like this
@@ -29,11 +31,15 @@ Install & Run ScreenStreamer
    # enter the project root directory
    cd ./src/ScreenStreamer
    # add the workspace directory and lib directory to GOPATH
-   export GOPATH=/path-to-workspace/ScreenStreamer:/path-to-workspace/ScreenStreamer/src/ScreenStreamer/lib
+   # export GOPATH=/path-to-workspace/ScreenStreamer:/path-to-workspace/ScreenStreamer/src/ScreenStreamer/lib
+   # run . ./dev.sh can set the GOPATH too
+   . ./dev.sh
    # build the mjpeg, it will produce binary executable files named "mjpeg" or "mjpeg.exe"
    go build ./cmd/mjpeg/mjpeg.go
    # build the rtmp, it will produce binary executable files named "rtmp" or "rtmp.exe"
    go build ./cmd/rtmp/rtmp.go
+   # build the get_active_window, it can get current active window's id for ScreenStreamerManager
+   go build ./cmd/get_active_window/get_active_window.go
 
    ```
 2. Config configuration file
@@ -116,6 +122,9 @@ Install & Run ScreenStreamer
 
    # target fps
    fps: 30
+
+   # write_frames_timeout, write frames deadline duration, default is 500ms
+   write_frames_timeout: 500
 
    # bit_rate, default is 64M
    bit_rate: 64
