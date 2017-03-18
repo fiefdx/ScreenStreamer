@@ -133,7 +133,7 @@ Install & Run ScreenStreamer
    bit_rate: 64
 
    # full_screen, default is true
-   full_screen: true # windowed mode not work now, so just set to true
+   full_screen: true # windowed mode not work now, so just set to true, if you want to capture window, then use ScreenStreamerManager
 
    # screenshot image
    # left offset, 0 is default
@@ -151,8 +151,8 @@ Install & Run ScreenStreamer
    # don't change this options, if you don't know how it works
    buffer_queue_size: 0
 
-   # to_sbs, convert 2d image to side-by-side images
-   to_sbs: false # not work now
+   # to_sbs, convert 2d image to side-by-side images, it's not work on full screen mode
+   to_sbs: false
    # cursor, capture cursor or not
    cursor: false
 
