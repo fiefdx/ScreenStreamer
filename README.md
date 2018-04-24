@@ -24,7 +24,7 @@ Install & Run ScreenStreamer
    # need install libjpeg/libjpeg-turbo, on windows, need install mingw, libjpeg/libjpeg-turbo for mjpeg
    sudo apt-get install libjpeg-turbo8-dev
    # need install libav, on windows, need install mingw, libav for rtmp
-   sudo apt-get install libav-tools
+   sudo apt-get install libav-tools libavcodec-dev libavformat-dev
    # create a workspace directory
    mkdir ./ScreenStreamer
    # enter the directory
