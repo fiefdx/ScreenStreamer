@@ -14,3 +14,4 @@ test/*.jpg
 *.jpeg
 *.jpg
 lib/pkg
+!cmd/*
