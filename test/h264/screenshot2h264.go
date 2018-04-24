@@ -155,7 +155,7 @@ func main() {
 	flvHeader.Version = 257
 	flvHeader.Body = []byte{70, 76, 86, 1, 1, 0, 0, 0, 9, 0, 0, 0, 0}
 
-	c, _ := codec.NewH264Encoder(new_img.Rect.Dx(), new_img.Rect.Dy(), image.YCbCrSubsampleRatio420, "bufsize,0k,0", "pixel_format,yuv420p,0")
+	c, _ := codec.NewH264Encoder(new_img.Rect.Dx(), new_img.Rect.Dy(), 0, 30, 1, 30, 64, image.YCbCrSubsampleRatio420 , "bufsize,0k,0", "pixel_format,yuv420p,0")
     nal = append(nal, c.Header)
 
 	w := flv.NewWriter(f4)

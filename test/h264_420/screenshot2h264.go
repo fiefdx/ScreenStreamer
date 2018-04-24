@@ -17,7 +17,9 @@ import (
 func main() {
 	threads := runtime.GOMAXPROCS(4)
     threads = runtime.GOMAXPROCS(4)
-    fmt.Printf("Server with threads: %v\n", threads)
+	fmt.Printf("Server with threads: %v\n", threads)
+	
+	screenshot.InitConn()
 
 	q := 100
 	var nal [][]byte
@@ -104,10 +106,10 @@ func main() {
 
 	f.Close()
 	
-	c, _ := codec.NewH264Encoder(new_img.Rect.Dx(), new_img.Rect.Dy(), image.YCbCrSubsampleRatio420)
+	c, _ := codec.NewH264Encoder(new_img.Rect.Dx(), new_img.Rect.Dy(), 0, 30, 1, 30, 64, image.YCbCrSubsampleRatio420 , "bufsize,0k,0", "pixel_format,yuv420p,0")
     nal = append(nal, c.Header)
 
-    for i := 0; i < 60; i++ {
+    for i := 0; i < 360; i++ {
         p, _ := c.Encode(new_img)
 		fmt.Printf("append data: len(%v)\n", len(p.Data))
         if len(p.Data) > 0 {
