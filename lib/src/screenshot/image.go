@@ -191,6 +191,24 @@ static void ImageToRGBALinux(unsigned char *data, int32_t length) {
 		data[i+3] = 255;
 	}
 }
+
+static void ImageToRGBASBSLinux(unsigned char *data, unsigned char *sbs, int32_t width,  int32_t height) {
+	int32_t t, u, v = width*4;
+	for (int32_t i = 0; i < height; i += 1) {
+		for (int32_t j = 0; j < v; j += 4) {
+			t = i*v;
+			u = 2*t;
+			sbs[u+j] = data[t+j+2];
+			sbs[u+j+1] = data[t+j+1];
+			sbs[u+j+2] = data[t+j];
+			sbs[u+j+3] = 255;
+			sbs[u+j+v] = data[t+j+2];
+			sbs[u+j+1+v] = data[t+j+1];
+			sbs[u+j+2+v] = data[t+j];
+			sbs[u+j+3+v] = 255;
+		}
+	}
+}
 */
 import "C"
 import (
@@ -316,6 +334,13 @@ func ConverterYCbCr() {
 func ImageToRGBALinux(data []byte) {
 	C.ImageToRGBALinux((*C.uchar)(unsafe.Pointer(&data[0])),
 		C.int32_t(len(data)))
+}
+
+func ImageToRGBASBSLinux(data []byte, sbs []byte, width, height int) {
+	C.ImageToRGBASBSLinux((*C.uchar)(unsafe.Pointer(&data[0])),
+		(*C.uchar)(unsafe.Pointer(&sbs[0])),
+		C.int32_t(width),
+		C.int32_t(height))
 }
 
 func ImageToRGBAWindows(data, bytes []byte) {

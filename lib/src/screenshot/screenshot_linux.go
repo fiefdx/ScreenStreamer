@@ -293,13 +293,15 @@ func CaptureWindow(pos *POS, size *SIZE, resize *RESIZE, toSBS bool, cursor bool
 	}
 
 	data := xImg.Data
-	ImageToRGBALinux(data)
 
 	var img *image.RGBA
 	if toSBS {
-		img = &image.RGBA{append(data, data...), 4 * width, image.Rect(pos.X, pos.Y, width*2-2, height-1)}
+		data2 := make([]byte, len(data)*2)
+		ImageToRGBASBSLinux(data, data2, width, height)
+		img = &image.RGBA{data2, 8 * width, image.Rect(pos.X, pos.Y, width*2, height)}
 	} else {
-		img = &image.RGBA{data, 4 * width, image.Rect(pos.X, pos.Y, width-1, height-1)}
+		ImageToRGBALinux(data)
+		img = &image.RGBA{data, 4 * width, image.Rect(pos.X, pos.Y, width, height)}
 	}
 	return img, nil
 }
