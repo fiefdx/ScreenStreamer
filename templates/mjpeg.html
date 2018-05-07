@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>mjpeg</title>
+        <meta charset="utf-8">
+        <meta name="mobile-web-app-capable" content="yes">
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            button {
+                width: 200px;
+                height: 50px;
+                font-size: 20px;
+            }
+
+            input {
+                width: 100px;
+                height: 42px;
+                font-size: 20px;
+                text-align: center;
+            }
+            
+            img {
+                padding: 0;
+                margin: 0;
+            }
+
+            #player_bottom,
+            #player_header {
+                padding: 0;
+                margin: 0;
+                background-color: black;
+                width: 100%;
+            }
+
+            #player_bottom {
+                margin-top: -4px;
+            }
+
+            #player_control {
+                text-align: left;
+                align-items: left;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="viewer">
+            <div id="player_header"></div>
+            <img id="player" src="/mjpeg"/>
+            <div id="player_bottom"></div>
+            <div id="player_control">
+                <!-- <button id="full_screen">full screen</button> -->
+                <input id="ratio_width" type="number" name="width" min="1" max="100" value="16">
+                <span> : </span>
+                <input id="ratio_height" type="number" name="height" min="1" max="100" value="9">
+                <button id="set_ratio">set ratio</button>
+            </div>
+        </div>
+        <script src="/static/jquery-3.3.1.js"></script>
+        <script>
+            console.log("{{.Test}}");
+            var fullScreenWidth = screen.width;
+            var fullScreenHeight = screen.height;
+            var windowWidth = $(window).width();
+            var windowHeight = $(window).height();
+            var viewer = document.getElementById("viewer");
+            var player = document.getElementById("player");
+            var platform = getMobileOperatingSystem();
+            // console.log("screen: " + fullScreenWidth + ", " + fullScreenHeight);
+            // console.log("window: " + windowWidth + ", " + windowHeight);
+
+            $(document).ready(function() {
+                $("#player_header").css('width', windowWidth + 'px');
+                $("#player_bottom").css('width', windowWidth + 'px');
+
+                $("#set_ratio").on("click", function() {
+                    var ratioWidth = $("#ratio_width").val();
+                    var ratioHeight = $("#ratio_height").val();
+                    var playerWidth = windowWidth;
+                    var playerHeight = windowWidth * ratioHeight / ratioWidth;
+                    var playerHeaderBottomHeight = platform == "Android" ? (fullScreenHeight - playerHeight) / 2 : (fullScreenHeight - playerHeight) * 2;
+                    $("#player").css('width', playerWidth + 'px');
+                    $("#player").css('height', playerHeight + 'px');
+                    $("#player_header").css('width', playerWidth + 'px');
+                    $("#player_header").css('height', playerHeaderBottomHeight + 'px');
+                    $("#player_bottom").css('width', playerWidth + 'px');
+                    $("#player_bottom").css('height', playerHeaderBottomHeight + 'px');
+                });
+
+                // viewer.addEventListener("click", function() {
+                //     player.requestFullscreen();
+                // }, false);
+            });
+            
+            function getMobileOperatingSystem() {
+                var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+                // Windows Phone must come first because its UA also contains "Android"
+                if (/windows phone/i.test(userAgent)) {
+                    return "Windows Phone";
+                }
+
+                if (/android/i.test(userAgent)) {
+                    return "Android";
+                }
+
+                // iOS detection from: http://stackoverflow.com/a/9039885/177710
+                if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                    return "iOS";
+                }
+
+                return "unknown";
+            }
+        </script>
+    </body>
+</html>

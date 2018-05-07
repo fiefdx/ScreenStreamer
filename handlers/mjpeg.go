@@ -11,6 +11,7 @@ import (
 	"net/textproto"
 	"time"
 	"stringio"
+	"html/template"
 )
 
 func MjpegHandler(w http.ResponseWriter, r *http.Request) {
@@ -83,4 +84,14 @@ func MjpegHandler(w http.ResponseWriter, r *http.Request) {
 
 	mimeWriter.Close()
 	Log.Debug(fmt.Sprintf("Success request"))
+}
+
+func MjpegViewerHandler(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("./templates/mjpeg.html")
+	p := struct {
+		Test string
+	}{
+		"this is a test!",
+	}
+	t.Execute(w, p)
 }

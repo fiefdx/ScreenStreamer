@@ -304,10 +304,14 @@ func main() {
 		panic(err)
 	}
 
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/jpeg", handlers.JpegHandler)
 	http.HandleFunc("/jpeg/", handlers.JpegHandler)
 	http.HandleFunc("/mjpeg", handlers.MjpegHandler)
 	http.HandleFunc("/mjpeg/", handlers.MjpegHandler)
+	http.HandleFunc("/mjpeg/viewer", handlers.MjpegViewerHandler)
+	http.HandleFunc("/mjpeg/viewer/", handlers.MjpegViewerHandler)
 	http.HandleFunc("/stop", handlers.StopHandler)
 	http.HandleFunc("/stop/", handlers.StopHandler)
 
